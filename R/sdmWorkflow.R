@@ -390,6 +390,9 @@ else {
 
     .__predIntercept.__ <- paste0(Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']],'_intercept')
 
+
+    .__spatModel.__ <- Workflow$.__enclos_env__$private$optionsRichness[['speciesSpatial']]
+
     ##Fix this
      #Need to get the datasets back together
 
@@ -407,6 +410,7 @@ else {
 
     }
 
+
    # spData <- unlist(append(Workflow$.__enclos_env__$private$dataGBIF,
   #                   Workflow$.__enclos_env__$private$dataStructured), recursive = FALSE)
 
@@ -418,7 +422,7 @@ else {
                                        pointsIntercept = .__pointsIntercept.__,
                                        IPS = IPS,
                                        copyModel = .__copyModel.__, speciesName = Workflow$.__enclos_env__$private$speciesName,
-                                       speciesSpatial = 'shared', ##WHICH ONE??
+                                       speciesSpatial = .__spatModel.__, ##WHICH ONE??
                                        pointsSpatial = NULL, speciesIndependent = TRUE,
                                        speciesEffects = list(randomIntercept = TRUE, Environmental = TRUE), #randomIntercept = NULL
                                        spatialCovariates = spatCovs)
@@ -473,7 +477,7 @@ else {
       richModel <- try(PointedSDMs::fitISDM(data = richSetup,
                                         options = Workflow$.__enclos_env__$private$optionsINLA))
 
-      if (inherits(richModel, 'try-error')) warning('Richness model failed to estimate. Will skip the rest of the outputs.')
+      if (inherits(richModel, 'try-error')) stop('Richness model failed to estimate. Will skip the rest of the outputs.')
 
       ##Predict and plot
 
@@ -487,11 +491,14 @@ else {
 
       }
 
+      if (is.null(.__spatModel.__)) .__predSpat.__ <- NULL
+      else .__predSpat.__ <- '+speciesShared'
+
 
       .__species.__ <- unique(unlist(richModel[['species']][['speciesIn']]))
 
-      predictionDataSP <- inlabru::fm_cprod(predictionData, data.frame(tempName = 1:length(.__species.__)))
-      names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
+      #predictionDataSP <- inlabru::fm_cprod(predictionData, data.frame(tempName = 1:length(.__species.__)))
+      #names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
 
       .__covs.__ <- richModel[['spatCovs']][['name']]
 
@@ -501,7 +508,7 @@ else {
 
       for (indexSp in 1:length(.__species.__)) {
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'), '+', .__predIntercept.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') ,'+ speciesShared , inverse = TRUE)')
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'), '+', .__predIntercept.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
 
       }
 
@@ -525,12 +532,12 @@ else {
 
       if (!inherits(richModel, 'try-error')) {
 
-      richPredicts <- PointedSDMs:::predict.bruSDM(richModel, predictionDataSP,
+      richPredicts <- PointedSDMs:::predict.bruSDM(richModel, predictionData, #predictionDataSP?
                                                    formula = parse(text = predictionFormula))
 
       speciesProb <- mapply(function(x, seq) {
 
-        prob <- x[x$species == seq,]
+        prob <- x[x[[workflow$.__enclos_env__$private$speciesName]] == seq,]
         list(prob)
 
       }, richPredicts[[1]], seq = 1:length(richPredicts[[1]]))
