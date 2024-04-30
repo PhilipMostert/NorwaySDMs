@@ -668,7 +668,6 @@ addGBIF = function(Species = 'All', datasetName = NULL,
       if (all(is.na(terra::values(maskedDF)))) stop('The covariate provided and the area specified do not match.')
 
       private$Covariates[[cov]] <- Object[cov]
-      #private$Covariates <- lapply(private$Covariates, terra::wrap)
 
 }
       #else get name of object and then save it
@@ -813,7 +812,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' @param ISDM Arguments to specify in \link[PointedSDMs]{intModel} from the \code{PointedSDMs} function. This argument needs to be a named list of the following options: \code{pointCovariates}, \code{pointsIntercept}, \code{pointsSpatial} or \code{copyModel}. See \code{?intModel} for more details.
 #' @param Ipoints Options to specify in \link[inlabru]{fm_int}'s \code{int.args} argument. See \code{?fmesher::fm_int} for more details.
 #' @param INLA Options to specify in \link[INLA]{inla} from the \code{inla} function. See \code{?inla} for more details.
-#' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options: \code{predictionIntercept}.
+#' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options: \code{predictionIntercept} and \code{speciesSpatial}.
 #' @examples
 #' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
 #'                           Projection = '+proj=longlat +ellps=WGS84',
@@ -825,20 +824,22 @@ addGBIF = function(Species = 'All', datasetName = NULL,
   modelOptions = function(ISDM = list(),
                           Ipoints = list(),
                           INLA = list(),
-                          Richness = list()) {
+                          Richness = list(speciesSpatial = 'shared')) {
 
     if (!is.list(ISDM)) stop('ISDM needs to be a list of arguments to specify the model.')
 
     if (any(!names(ISDM) %in% c('pointCovariates', 'pointsIntercept', #Remove pointCovariates perhaps?
                                 'pointsSpatial', 'copyModel'))) stop('ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
 
-    if (any(!names(Richness) %in% c('predictionIntercept'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
+    if (any(!names(Richness) %in% c('predictionIntercept', 'speciesSpatial'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
 
     if ('predictionIntercept' %in% names(Richness)) {
 
       if (length(Richness[['predictionIntercept']] ) > 1) stop('predictionIntercept needs to contain only one element.')
 
       if (!Richness[['predictionIntercept']] %in% private$datasetName) stop('predictionIntercept needs to be a name of one of the datasets in the model.')
+
+      if (!Richness[['speciesSpatial']] %in% c('shared') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL or "shared.')
 
     }
 
@@ -851,7 +852,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     if (length(ISDM) > 0) private$optionsISDM <- ISDM
     if (length(Ipoints) > 0) private$optionsIpoints <- Ipoints
     if (length(INLA) > 0) private$optionsINLA <- INLA
-    if (length(Richness) > 0) private$optionsRichness <- Richness
+    if (length(Richness) > 1) private$optionsRichness <- Richness
 
   }
   ,
