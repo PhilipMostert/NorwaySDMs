@@ -824,7 +824,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
   modelOptions = function(ISDM = list(),
                           Ipoints = list(),
                           INLA = list(),
-                          Richness = list(speciesSpatial = 'shared')) {
+                          Richness = list()) {
 
     if (!is.list(ISDM)) stop('ISDM needs to be a list of arguments to specify the model.')
 
@@ -839,9 +839,11 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
       if (!Richness[['predictionIntercept']] %in% private$datasetName) stop('predictionIntercept needs to be a name of one of the datasets in the model.')
 
-      if (!Richness[['speciesSpatial']] %in% c('shared') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL or "shared.')
-
     }
+
+    if (!'speciesSpatial' %in% names(Richness)) Richness[['speciesSpatial']] <- 'shared'
+    else
+      if (!Richness[['speciesSpatial']] %in% c('shared') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL or "shared.')
 
     if (!is.list(INLA)) stop('INLA needs to be a list of INLA arguments to specify the model.')
 
@@ -852,7 +854,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     if (length(ISDM) > 0) private$optionsISDM <- ISDM
     if (length(Ipoints) > 0) private$optionsIpoints <- Ipoints
     if (length(INLA) > 0) private$optionsINLA <- INLA
-    if (length(Richness) > 1) private$optionsRichness <- Richness
+    if (length(Richness) > 0) private$optionsRichness <- Richness
 
   }
   ,
