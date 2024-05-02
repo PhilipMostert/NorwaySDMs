@@ -22,7 +22,7 @@ obtainGBIF <- function(query,
 
   ##Add something here to create absences in lists where species are not.
 
-  if (!inherits(geometry, 'sf')) geometry <- as(geometry, 'sf')
+  if (!inherits(geometry, 'sf')) geometry <- st_as_sf(geometry)#geometry <- as(geometry, 'sf')
 
   boundaryCheck <- sf::st_transform(geometry, crs = "+proj=longlat +ellps=WGS84")
 
