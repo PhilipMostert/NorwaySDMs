@@ -501,6 +501,7 @@ else {
       #names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
 
       .__covs.__ <- richModel[['spatCovs']][['name']]
+      if (!is.null(.__covs.__)) .__covs.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
 
       if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) .__covs.__ <- .__covs.__[!.__covs.__ %in%  names(Workflow$.__enclos_env__$private$biasCovariates)]
 
@@ -508,7 +509,7 @@ else {
 
       for (indexSp in 1:length(.__species.__)) {
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'), '+', .__predIntercept.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(',  .__predIntercept.__, .__covs.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
 
       }
 
@@ -537,7 +538,7 @@ else {
 
       speciesProb <- mapply(function(x, seq) {
 
-        prob <- x[x[[workflow$.__enclos_env__$private$speciesName]] == seq,]
+        prob <- x[x[[Workflow$.__enclos_env__$private$speciesName]] == seq,]
         list(prob)
 
       }, richPredicts[[1]], seq = 1:length(richPredicts[[1]]))
