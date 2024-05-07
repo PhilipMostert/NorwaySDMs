@@ -501,7 +501,6 @@ else {
       #names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
 
       .__covs.__ <- richModel[['spatCovs']][['name']]
-      if (!is.null(.__covs.__)) .__covs.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
 
       if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) .__covs.__ <- .__covs.__[!.__covs.__ %in%  names(Workflow$.__enclos_env__$private$biasCovariates)]
 
@@ -509,7 +508,10 @@ else {
 
       for (indexSp in 1:length(.__species.__)) {
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(',  .__predIntercept.__, .__covs.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
+        if (!is.null(.__covs.__)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
+        else .__covsSP.__ <- NULL
+
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(',  .__predIntercept.__, .__covsSP.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
 
       }
 
