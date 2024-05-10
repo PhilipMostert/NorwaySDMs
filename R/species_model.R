@@ -890,7 +890,44 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
   }
   ,
+#' @description Function to specify priors for the fixed effects in the model. The priors of the fixed effects are assumed to be Gaussian; this function alows the user to specify the parameters of this distribution.
+#' @param effectNames The name of the effects to specify the prior for. Must be the name of any of the covariates incldued in the model, or 'Intercept' to specify the priors for the intercept terms.
+#' @param Mean The mean of the prior distribution. Defaults to \code{0}.
+#' @param Precision The precision (inverse variance) of the prior distribution. Defaults to \code{0.01}.
+#
+#' @examples
+#' \dontrun{
+#' if (requireNamespace('INLA')) {
+#' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
+#'                           Projection = '+proj=longlat +ellps=WGS84',
+#'                           Save = FALSE,
+#'                           saveOptions = list(projectName = 'example'))
+#'
+#' #Add boundary
+#' workflow$addArea(countryName = 'Sweden')
+#' workflow$addMesh(cutoff = 20000,
+#'                  max.edge=c(60000, 80000),
+#'                  offset= 100000)
+#' workflow$specifyPriors(effectName = 'Intercept', mean = 0, Precision = 0.1)
+#' }
+#' }
+specifyPriors = function(effectNames, Mean = 0, Precision = 0.01) {
 
+  if (!all(effectNames %in% c('Intercept', unlist(lapply(private$Covariates, names))))) stop('effectNames must be the names of the effects added with .$addCovariates or "Intercept".')
+
+  for (effect in effectNames) {
+
+    private$priorsFixed[[effect]] <- c(Mean = Mean, Prec = Precision)
+
+  }
+
+
+  ##Something here for the random effects prior for the random iid model
+
+
+
+}
+,
 #' @description Function to add bias fields to the model.
 #' @param datasetName Name of the dataset to add a bias field to.
 #' @param copyModel Create copies of the biasField across the different datasets. Defaults to \code{FALSE}.
@@ -1130,7 +1167,7 @@ species_model$set('private', 'biasNames', NULL)
 species_model$set('private', 'biasCovNames', NULL)
 species_model$set('private', 'blockOptions', list())
 species_model$set('private', 'classGBIF', list())
-
+species_model$set('private', 'priorsFixed', list())
 
 
 ##Change all the variable names for the GBIF data too
