@@ -160,6 +160,17 @@ else {
 
    }
 
+  if (!is.null(Workflow$.__enclos_env__$private$priorsFixed)) {
+
+    for (var in names(Workflow$.__enclos_env__$private$priorsFixed)) {
+
+      initializeModel$priorsFixed(Effect = var, mean.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][1], prec.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][2])
+
+
+    }
+
+  }
+
   if (!is.null(Workflow$.__enclos_env__$private$sharedField)) initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
 
   if (!is.null(Workflow$.__enclos_env__$private$biasNames)) {
@@ -426,6 +437,17 @@ else {
                                        pointsSpatial = NULL, speciesIndependent = TRUE,
                                        speciesEffects = list(randomIntercept = TRUE, Environmental = TRUE), #randomIntercept = NULL
                                        spatialCovariates = spatCovs)
+
+    if (!is.null(Workflow$.__enclos_env__$private$priorsFixed)) {
+
+      for (var in names(Workflow$.__enclos_env__$private$priorsFixed)) {
+
+        initializeModel$priorsFixed(Effect = var, mean.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][1], prec.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][2])
+
+
+      }
+
+    }
 
     if (!is.null(Workflow$.__enclos_env__$private$sharedField)) richSetup$spatialFields$speciesFields$speciesField <- Workflow$.__enclos_env__$private$sharedField
 
