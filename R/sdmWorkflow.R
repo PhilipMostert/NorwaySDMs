@@ -442,7 +442,7 @@ else {
 
       for (var in names(Workflow$.__enclos_env__$private$priorsFixed)) {
 
-        initializeModel$priorsFixed(Effect = var, mean.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][1], prec.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][2])
+        richSetup$priorsFixed(Effect = var, mean.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][1], prec.linear = Workflow$.__enclos_env__$private$priorsFixed[[var]][2])
 
 
       }
@@ -516,8 +516,10 @@ else {
       if (is.null(.__spatModel.__)) .__predSpat.__ <- NULL
       else .__predSpat.__ <- '+speciesShared'
 
+      if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
+      else predictionData$sampSize <- 1
 
-      .__species.__ <- unique(unlist(richModel[['species']][['speciesIn']]))
+      .__species.__ <- sort(unique(unlist(richModel[['species']][['speciesIn']])))
 
       #predictionDataSP <- inlabru::fm_cprod(predictionData, data.frame(tempName = 1:length(.__species.__)))
       #names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
@@ -533,7 +535,7 @@ else {
         if (!is.null(.__covs.__)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
         else .__covsSP.__ <- NULL
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(',  .__predIntercept.__, .__covsSP.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
 
       }
 
