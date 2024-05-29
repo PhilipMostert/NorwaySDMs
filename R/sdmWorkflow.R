@@ -156,7 +156,9 @@ else {
                                             trialsPA = .__trialsName.__, pointsSpatial = .__pointsSpatial.__,
                                             pointsIntercept = .__pointsIntercept.__ , IPS = IPS,
                                             copyModel = .__copyModel.__, Boundary = Workflow$.__enclos_env__$private$Area,
-                                            spatialCovariates = spatCovs)
+                                            spatialCovariates = spatCovs,
+                                            Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
+                                                            biasFormula = Workflow$.__enclos_env__private$biasFormula))
 
    }
 
@@ -436,7 +438,9 @@ else {
                                        speciesSpatial = .__spatModel.__, ##WHICH ONE??
                                        pointsSpatial = NULL, speciesIndependent = TRUE,
                                        speciesEffects = list(randomIntercept = TRUE, Environmental = TRUE), #randomIntercept = NULL
-                                       spatialCovariates = spatCovs)
+                                       spatialCovariates = spatCovs,
+                                       Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
+                                                       biasFormula = Workflow$.__enclos_env__$private$biasFormula))
 
     if (!is.null(Workflow$.__enclos_env__$private$priorsFixed)) {
 
@@ -467,6 +471,12 @@ else {
       }
 
     }
+
+    if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = FALSE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
+
+    if (is.null(workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$Richness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
+              control.group = list(model = "iid", hyper = list(prec = ', WorkFlow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
+
 
     if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) {
 
@@ -515,6 +525,7 @@ else {
 
       if (is.null(.__spatModel.__)) .__predSpat.__ <- NULL
       else .__predSpat.__ <- '+speciesShared'
+      #If copy then add here too
 
       if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
       else predictionData$sampSize <- 1
@@ -532,9 +543,13 @@ else {
 
       for (indexSp in 1:length(.__species.__)) {
 
-        if (!is.null(.__covs.__)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
-        else .__covsSP.__ <- NULL
+        if (paste0(.__species.__[indexSp], '_Fixed__Effects__Comps') %in% names(richModel$summary.random)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp], '_Fixed__Effects__Comps'))
+        else {
 
+          if (!is.null(.__covs.__)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
+          else .__covsSP.__ <- NULL
+
+        }
         .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
 
       }
