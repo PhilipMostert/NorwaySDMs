@@ -444,7 +444,7 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
     else {
 
       if (!inherits(Object, 'inla.mesh')) stop('Object provided is not an inla.mesh object.')
-
+#Ensure CRS is the same
       private$Mesh <- Object
 
     }
@@ -845,7 +845,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
     if (!'speciesSpatial' %in% names(Richness)) Richness[['speciesSpatial']] <- 'shared'
     else
-      if (!Richness[['speciesSpatial']] %in% c('shared', 'replicate') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL, "replicate" or "shared.')
+      if (!Richness[['speciesSpatial']] %in% c('shared', 'replicate', 'copy') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL, "replicate", "copy" or "shared.')
 
     if (!is.list(INLA)) stop('INLA needs to be a list of INLA arguments to specify the model.')
 
@@ -896,6 +896,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' @param effectNames The name of the effects to specify the prior for. Must be the name of any of the covariates incldued in the model, or 'Intercept' to specify the priors for the intercept terms.
 #' @param Mean The mean of the prior distribution. Defaults to \code{0}.
 #' @param Precision The precision (inverse variance) of the prior distribution. Defaults to \code{0.01}.
+#' @param priorIntercept Prior for the precision parameter for the random intercept in the species richness model. Needs \code{workflowOutput = "Richness"}. Defaults to the default \textit{INLA} prior.
+#' @param priorGroup Prior for the precision for the \textit{iid} effect in the species spatial effect in the richness model. Needs \code{workflowOutput = "Richness"} and \code{speciesSpatial = "replicate"} in the richness options. Defualts to the default \textit{INLA} prior.
 #
 #' @examples
 #' \dontrun{
@@ -913,7 +915,9 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' workflow$specifyPriors(effectName = 'Intercept', mean = 0, Precision = 0.1)
 #' }
 #' }
-specifyPriors = function(effectNames, Mean = 0, Precision = 0.01) {
+specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
+                         priorIntercept = list(prior="loggamma", param = c(1, 5e-5)),
+                         priorGroup = list(prior = "loggamma", param = c(1, 5e-5))) {
 
   if (!all(effectNames %in% c('Intercept', unlist(lapply(private$Covariates, names))))) stop('effectNames must be the names of the effects added with .$addCovariates or "Intercept".')
 
@@ -923,6 +927,8 @@ specifyPriors = function(effectNames, Mean = 0, Precision = 0.01) {
 
   }
 
+  private$priorIntercept <- deparse1(priorIntercept)
+  private$priorGroup <- deparse1(priorGroup)
 
   ##Something here for the random effects prior for the random iid model
 
@@ -1055,6 +1061,25 @@ biasCovariate = function(datasetName,
 
   }
   ,
+#' @description Add a formula to the model
+#' @param covariateFormula Change the covariate formula of the model.
+#' @param biasFormula Change the bias formula of the model
+#' @examples
+#'
+#'
+#'
+
+modelFormula = function(covariateFormula, biasFormula) {
+
+  if (!missing(covariateFormula)) private$covariateFormula <- covariateFormula
+
+  #Check if all variables in here are in the covariates
+
+  if (!missing(biasFormula)) private$biasFormula <- biasFormula
+
+
+}
+  ,
 
 #' @description Obtain metadata from the workflow.
 #' @param Number Print the number of observations per dataset. Defaults to \code{TRUE}.
@@ -1170,7 +1195,11 @@ species_model$set('private', 'biasCovNames', NULL)
 species_model$set('private', 'blockOptions', list())
 species_model$set('private', 'classGBIF', list())
 species_model$set('private', 'priorsFixed', list())
+species_model$set('private', 'priorGroup', deparse1(list(prior="loggamma", param = c(1, 5e-5))))
+species_model$set('private', 'priorIntercept', deparse1(list(prior="loggamma", param = c(1, 5e-5))))
 species_model$set('private', 'samplingSize', NULL)
+species_model$set('private', 'covariateFormula', NULL)
+species_model$set('private', 'biasFormula', NULL)
 
 
 
