@@ -474,8 +474,8 @@ else {
 
     if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = FALSE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
 
-    if (is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$Richness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
-              control.group = list(model = "iid", hyper = list(prec = ', WorkFlow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
+    if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
+              control.group = list(model = "iid", hyper = list(prec = ', Workflow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
 
 
     if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) {
