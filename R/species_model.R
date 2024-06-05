@@ -919,11 +919,15 @@ specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
                          priorIntercept = list(prior="loggamma", param = c(1, 5e-5)),
                          priorGroup = list(prior = "loggamma", param = c(1, 5e-5))) {
 
+  if (!missing(effectNames)) {
+
   if (!all(effectNames %in% c('Intercept', unlist(lapply(private$Covariates, names))))) stop('effectNames must be the names of the effects added with .$addCovariates or "Intercept".')
 
   for (effect in effectNames) {
 
     private$priorsFixed[[effect]] <- c(Mean = Mean, Prec = Precision)
+
+  }
 
   }
 
