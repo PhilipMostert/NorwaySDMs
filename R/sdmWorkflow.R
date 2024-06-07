@@ -173,7 +173,20 @@ else {
 
   }
 
-  if (!is.null(Workflow$.__enclos_env__$private$sharedField)) initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
+  if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
+
+    if (.__pointsSpatial.__ == 'shared') initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
+    else {
+
+      for (data in names(initializeModel$spatialFields$datasetFields)) {
+
+        initializeModel$spatialFields$datasetFields[[data]] <- Workflow$.__enclos_env__$private$sharedField
+
+      }
+
+    }
+
+  }
 
   if (!is.null(Workflow$.__enclos_env__$private$biasNames)) {
 
