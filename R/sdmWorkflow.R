@@ -89,7 +89,7 @@ sdmWorkflow <- function(Workflow = NULL,
 
   IPS <- fm_int(domain = .__mesh.__, samplers = Workflow$.__enclos_env__$private$Area,
                 int.args = Workflow$.__enclos_env__$private$optionsIpoints)
-
+  st_geometry(IPS) <- 'geometry'
   if (!all(Oputs %in% c('Richness', 'Bias'))) {
 
   for (species in unique(c(names(Workflow$.__enclos_env__$private$dataGBIF),
