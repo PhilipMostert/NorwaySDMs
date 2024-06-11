@@ -604,6 +604,12 @@ else {
 
       richOutput <- list(Richness = predictionData, Probabilities = speciesProb)
 
+      removeList <- grepl('spatial', names(richModel$summary.random)) | names(richModel$summary.random) == 'speciesShared'
+      if (paste0(richModel$species$speciesVar,'_intercepts') %in% names(richModel$summary.random)) richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]$ID <- paste0(row.names(richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]), '_intercept')
+
+      outputList[['modelResults']] <- list(Fixed = richModel$summary.fixed,
+                                           Random = do.call(rbind, richModel$summary.random[!removeList]),
+                                           Hyperparameters = richModel$summary.hyperpar)
 
       if (saveObjects) {
 
@@ -636,13 +642,6 @@ else {
           } else outputList[[speciesNameInd]][['BiasRichness']] <- biasPreds
 
       }
-
-      removeList <- grepl('spatial', names(richModel$summary.random)) | names(richModel$summary.random) == 'speciesShared'
-      if (paste0(richModel$species$speciesVar,'_intercepts') %in% names(richModel$summary.random)) richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]$ID <- paste0(row.names(richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]), '_intercept')
-
-      outputList[['modelResults']] <- list(Fixed = richModel$summary.fixed,
-                        Random = do.call(rbind, richModel$summary.random[!removeList]),
-                        Hyperparameters = richModel$summary.hyperpar)
 
 
       }
