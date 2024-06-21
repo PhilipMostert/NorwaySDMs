@@ -43,20 +43,22 @@ specified outcomes of the workflow. `startWorkflow` produces an
 [*R6*](https://r6.r-lib.org), which has a multitude of different *slot*
 functions to help customize the workflow. These include:
 
-| Function name         | Function use                                                                                                                                                          |
-|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `.$plot()`            | Plot data and other objects required for the model.                                                                                                                   |
-| `.$addStructured()`   | Add data not available on GBIF.                                                                                                                                       |
-| `.$addMesh()`         | Create an *inla.mesh* object.                                                                                                                                         |
-| `.$addGBIF()`         | Add data from GBIF.                                                                                                                                                   |
-| `.$addArea()`         | Specify sampling domain.                                                                                                                                              |
-| `.$addCovariates()`   | Add spatial covariates.                                                                                                                                               |
-| `.$crossValidation()` | Specify the cross-validation method.                                                                                                                                  |
-| `.$modelOptions()`    | Add [*R-INLA*](https://www.r-inla.org), [*inlabru*](https://inlabru-org.github.io/inlabru/)and [*PointedSDMs*](https://github.com/PhilipMostert/PointedSDMs) options. |
-| `.$specifySpatial()`  | Add penalizing complexity priors to the spatial effects.                                                                                                              |
-| `.$biasFields()`      | Specify an additional spatial effect for a dataset.                                                                                                                   |
-| `.$workflowOutput()`  | Specify the output of the workflow.                                                                                                                                   |
-| `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                                                                           |
+| Function name         | Function use                                                                                                                                                           |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `.$plot()`            | Plot data and other objects required for the model.                                                                                                                    |
+| `.$addStructured()`   | Add data not available on GBIF.                                                                                                                                        |
+| `.$addMesh()`         | Create an *inla.mesh* object.                                                                                                                                          |
+| `.$addGBIF()`         | Add data from GBIF.                                                                                                                                                    |
+| `.$addArea()`         | Specify sampling domain.                                                                                                                                               |
+| `.$addCovariates()`   | Add spatial covariates.                                                                                                                                                |
+| `.$crossValidation()` | Specify the cross-validation method.                                                                                                                                   |
+| `.$modelOptions()`    | Add [*R-INLA*](https://www.r-inla.org), [*inlabru*](https://inlabru-org.github.io/inlabru/) and [*PointedSDMs*](https://github.com/PhilipMostert/PointedSDMs) options. |
+| `.$specifySpatial()`  | Add penalizing complexity priors to the spatial effects.                                                                                                               |
+| `.$biasFields()`      | Specify an additional spatial effect for a dataset.                                                                                                                    |
+| `.$workflowOutput()`  | Specify the output of the workflow.                                                                                                                                    |
+| `.$specifyPriors()`   | Specify the priors of the model.                                                                                                                                       |
+| `.$modelFormula`      | Add a formula for the covariates and bias of the model.                                                                                                                |
+| `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                                                                            |
 
 An example of the package in-use is provided as a vignette within the
 package.
