@@ -248,7 +248,7 @@ testthat::test_that('crossValidation correctly specifies the correct cross-valid
 
   expect_error(workflow$crossValidation())
 
-  expect_error(workflow$crossValidation(Method = 'kfold'), 'Output needs to be at least one of: spatialBlock, Loo.')
+  expect_error(workflow$crossValidation(Method = 'kfold'), 'Method needs to be at least one of: spatialBlock, Loo.')
 
   workflow$crossValidation(Method = c('spatialBlock', 'Loo'))
 
@@ -271,20 +271,15 @@ testthat::test_that('modelOptions correctly adds options', {
 
   skip_on_cran()
 
-  expect_error(workflow$modelOptions(INLA = 'control.strategy = list()'), 'INLA needs to be a list of INLA arguments to specify the model.')
-
   expect_error(workflow$modelOptions(ISDM = list(marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
   expect_error(workflow$modelOptions(ISDM = list(pointsSpatial = FALSE, marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
 
   workflow$modelOptions(ISDM = list(pointsSpatial = 'copy', copyModel = list(beta = list(fixed = TRUE))))
-  workflow$modelOptions(INLA = list(control.inla = list(int.strategy = 'eb')))
 
   expect_setequal(names(workflow$.__enclos_env__$private$optionsISDM), c('pointsSpatial', 'copyModel'))
 
   expect_true(workflow$.__enclos_env__$private$optionsISDM$copyModel$beta$fixed == TRUE)
   expect_true(workflow$.__enclos_env__$private$optionsISDM$pointsSpatial == 'copy')
-
-  expect_true(workflow$.__enclos_env__$private$optionsINLA$control.inla$int.strategy == 'eb')
 
 })
 
@@ -310,20 +305,28 @@ testthat::test_that('biasFields correctly adds the bias field', {
 
   skip_on_cran()
 
+  workflow2 <- workflow
+
   expect_error(workflow$biasFields(), 'argument "datasetName" is missing, with no default')
 
   expect_error(workflow$biasFields(datasetName = 'NotIn'), 'Dataset specified for bias field not included in the workflow.')
 
-  workflow$biasFields(datasetName = c('dataCounts', "dataFrame"))
+  expect_error(workflow$biasFields(datasetName = c('dataCounts', "dataFrame"), copyModel = TRUE,
+                                   shareModel = TRUE), 'Only one of copyModel and shareModel may be TRUE.')
+
+  workflow$biasFields(datasetName = c('dataCounts', "dataFrame"), copyModel = TRUE)
   expect_setequal(workflow$.__enclos_env__$private$biasNames, c("dataCounts", "dataFrame"))
+  expect_true(workflow$.__enclos_env__$private$biasFieldsCopy)
 
-  workflow$biasFields(datasetName = c('dataPA2', 'dataPA'))
-
+  workflow$biasFields(datasetName = c('dataPA2', 'dataPA'), shareModel = FALSE)
   expect_setequal(workflow$.__enclos_env__$private$biasNames, c("dataCounts", "dataFrame", 'dataPA2', 'dataPA'))
 
-  workflow$biasFields(datasetName = c('dataPA2', 'dataPA'), prior.range = c(1, 0.1), prior.sigma = c(1, 0.2))
+  workflow2$biasFields(datasetName = c('dataPA2', 'dataPA'), shareModel = TRUE)
+  expect_true(workflow2$.__enclos_env__$private$biasFieldsShare)
 
-  expect_setequal(names(workflow$.__enclos_env__$private$biasFieldsSpecify), c("dataCounts", "dataFrame", 'dataPA2', 'dataPA'))
+  workflow2$biasFields(datasetName = c('dataPA2', 'dataPA'), prior.range = c(1, 0.1), prior.sigma = c(1, 0.2))
+
+  expect_setequal(names(workflow$.__enclos_env__$private$biasFieldsSpecify), c("dataCounts", "dataFrame", 'dataPA2', 'dataPA', 'sharedBias'))
 
   expect_setequal(class(workflow$.__enclos_env__$private$biasFieldsSpecify$dataPA2), c("inla.spde2", "inla.spde", "inla.model.class"))
   expect_setequal(class(workflow$.__enclos_env__$private$biasFieldsSpecify$dataPA), c("inla.spde2", "inla.spde", "inla.model.class"))
@@ -338,11 +341,33 @@ testthat::test_that('workflowOutput gives the correct output', {
 
   expect_error(workflow$workflowOutput(), 'argument "Output" is missing, with no default')
 
-  expect_error(workflow$workflowOutput('Trendline'), 'Output needs to be at least one of: Model, Predictions, Maps, Bias or Cross-validation.')
+  expect_error(workflow$workflowOutput('Trendline'), 'Output needs to be at least one of: Model, Predictions, Maps, Bias, Summary or Cross-validation.')
 
   workflow$workflowOutput(c('Model', 'Maps', 'Cross-validation'))
 
   })
 
+testthat::test_that('specifyPriors can correctly specify the correct priors', {
+  #Wrong name
+  expect_error(workflow$specifyPriors(effectNames = 'xx'))
+
+  workflow$specifyPriors('Intercept', Mean = 100, Precision = 1)
+  expect_setequal(workflow$.__enclos_env__$private$priorsFixed$Intercept, c(100, 1))
+
+  workflow$specifyPriors(priorIntercept = list(prior = 'pc.prec', param = c(2, 0.1)),
+                         priorGroup = list(prior = 'pc.prec', param = c(3, 0.5)))
+
+  expect_equal(workflow$.__enclos_env__$private$priorGroup, "list(prior = \"pc.prec\", param = c(3, 0.5))")
+  expect_equal(workflow$.__enclos_env__$private$priorIntercept,"list(prior = \"pc.prec\", param = c(2, 0.1))")
+
+})
+
+testthat::test_that('modelFormula correctly adds the formula', {
+
+  workflow$modelFormula(covariateFormula = ~ covariate)
+  workflow$modelFormula(biasFormula = ~ biasFormula)
+  expect_equal(deparse1(workflow$.__enclos_env__$private$covariateFormula), '~covariate')
+  expect_equal(deparse1(workflow$.__enclos_env__$private$biasFormula), '~biasFormula')
 
 
+})

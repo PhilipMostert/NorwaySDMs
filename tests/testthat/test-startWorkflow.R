@@ -10,17 +10,17 @@ testthat::test_that('startWorkflow can correctly create a species_model object, 
   species <- 'Fraxinus excelsior'
 
   expect_error(startWorkflow(Countries = countries,
-                            Species = species,
-                            saveOptions = list(projectName = 'testthat')), 'argument "Projection" is missing, with no default')
+                             Species = species,
+                             saveOptions = list(projectName = 'testthat')), 'argument "Projection" is missing, with no default')
 
   countriesTry <- try(giscoR::gisco_countries[giscoR::gisco_countries$NAME_ENGL %in% c('Sweden', 'Norway'), ])
 
   skip_if(inherits(countriesTry, 'try-error'))
 
   expect_message(startWorkflow(Species = species,
-                saveOptions = list(projectName = 'testthat'),
-                Projection = proj,
-                Quiet = TRUE), regexp = NA)
+                               saveOptions = list(projectName = 'testthat'),
+                               Projection = proj,
+                               Quiet = TRUE), regexp = NA)
 
   expect_message(startWorkflow(Species = species,
                                saveOptions = list(projectName = 'testthat'),
@@ -38,5 +38,14 @@ testthat::test_that('startWorkflow can correctly create a species_model object, 
 
   unlink('./testthatexample', recursive = TRUE)
 
+  ##Test Richness model
+  workflow <- startWorkflow(Species = species,
+                            saveOptions = list(projectName = 'testthatexample',
+                                               projectDirectory = './'),
+                            Projection = proj, Richness = TRUE,
+                            Save = FALSE,
+                            Quiet = TRUE)
+  expect_true(workflow$.__enclos_env__$private$richnessEstimate)
 
-  })
+
+})

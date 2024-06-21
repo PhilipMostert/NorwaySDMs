@@ -40,43 +40,50 @@ testthat::test_that('initValues can estimate a glm to obtain initial values', {
   names(cov) <- 'covariate'
 
   ##Find initial values with species
-  obj <- intModel(PO, PA, Counts, Coordinates = coordnames, Projection = projection, Mesh = mesh,
-                  IPS = iPoints, responseCounts = responseCounts, speciesIndependent = FALSE,
-                  responsePA = responsePA, speciesSpatial = 'individual',
+  obj <- startSpecies(PO, PA, Counts, Projection = projection, Mesh = mesh,
+                  IPS = iPoints, responseCounts = responseCounts,
+                  responsePA = responsePA, speciesSpatial = 'replicate',
                   speciesName = speciesName, spatialCovariates = cov)
 
 
   speciesVals <- initValues(data = obj, formulaComponents = 'covariate')
   expect_equal(class(speciesVals), 'list')
+  ##FIX THIS
   expect_setequal(names(speciesVals), c( "fish_covariate", "bird_covariate", "PO_intercept", "PA_intercept", "Counts_intercept"))
 
   ##Find initial values with species but fixed environment
-  obj2 <- intModel(PO, PA, Counts, Coordinates = coordnames, Projection = projection, Mesh = mesh,
-                  IPS = iPoints, responseCounts = responseCounts, speciesIndependent = FALSE,
-                  responsePA = responsePA, speciesSpatial = 'individual',
-                  speciesName = speciesName, spatialCovariates = cov, speciesEffects = list(Environmental = FALSE,
-                                                                                            randomIntercept = TRUE))
+  obj2 <- startSpecies(PO, PA, Counts, Projection = projection, Mesh = mesh,
+                  IPS = iPoints, responseCounts = responseCounts,
+                  responsePA = responsePA, speciesSpatial = 'replicate',
+                  speciesName = speciesName, spatialCovariates = cov, speciesEnvironment = FALSE, speciesIntercept = TRUE)
   speciesVals2 <- initValues(data = obj2, formulaComponents = 'covariate')
-  expect_setequal(names(speciesVals2), c( "covariate", "fish_intercept", "bird_intercept"))
+  expect_setequal(names(speciesVals2), c( "covariate", "PO_intercept", "PA_intercept", 'Counts_intercept'))
 
   #Find initial values no species
-  obj3 <- intModel(PO, PA, Counts, Coordinates = coordnames, Projection = projection, Mesh = mesh,
-                   IPS = iPoints, responseCounts = responseCounts, speciesIndependent = FALSE,
-                   responsePA = responsePA, speciesSpatial = 'individual',
-                   speciesName = NULL, spatialCovariates = cov)
+  obj3 <- startISDM(PO, PA, Counts, Projection = projection, Mesh = mesh,
+                   IPS = iPoints, responseCounts = responseCounts,
+                   responsePA = responsePA,
+                   spatialCovariates = cov)
 
   datasetVals <- initValues(data = obj3, formulaComponents = 'covariate')
   expect_setequal(names(datasetVals), c( "covariate", "PO_intercept", "PA_intercept", 'Counts_intercept'))
 
   #Find initial values no species and no intercept
-  obj4 <- intModel(PO, PA, Counts, Coordinates = coordnames, Projection = projection, Mesh = mesh,
-                   IPS = iPoints, responseCounts = responseCounts, speciesIndependent = FALSE,
-                   responsePA = responsePA, speciesSpatial = 'individual', pointsIntercept = FALSE,
-                   speciesName = NULL, spatialCovariates = cov)
+  obj4 <- startISDM(PO, PA, Counts, Projection = projection, Mesh = mesh,
+                   IPS = iPoints, responseCounts = responseCounts,
+                   responsePA = responsePA, pointsIntercept = FALSE,
+                   spatialCovariates = cov)
 
   datasetVals2 <- initValues(data = obj4, formulaComponents = 'covariate')
 
   expect_setequal(names(datasetVals2), c( "covariate"))
 
+  #Try species fixed intercept + data intercept
+  obj5 <- startSpecies(PO, PA, Counts, Projection = projection, Mesh = mesh,
+                       IPS = iPoints, responseCounts = responseCounts,
+                       responsePA = responsePA, speciesSpatial = 'replicate',
+                       speciesName = speciesName, spatialCovariates = cov, speciesEnvironment = TRUE, speciesIntercept = FALSE)
+  speciesVals5 <- initValues(data = obj5, formulaComponents = 'covariate')
+  expect_setequal(names(speciesVals5), c('fish_covariate', 'bird_covariate', 'PO_intercept', 'fish_intercept', 'PA_intercept', 'bird_intercept', 'Counts_intercept'))
 
 })

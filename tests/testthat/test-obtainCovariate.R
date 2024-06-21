@@ -5,7 +5,7 @@ testthat::test_that('obtainCovariate can correctly obtain the covariate layer, a
 
   covname <- "tavg"
   countries <- c('Norway', 'Sweden')
-  projection <- "+proj=lcc +lat_1=48 +lat_2=33 +lon_0=-100 +datum=WGS84"
+  projection <- '+proj=utm +zone=59 +south'
   #path <- './tests/testthat'
   path <- './wc2.1_country'
   dir.create(path)
@@ -15,7 +15,7 @@ testthat::test_that('obtainCovariate can correctly obtain the covariate layer, a
     ##If taking too long//servers down
 
   try(cov <- withTimeout(
-    obtainCovariate(covname, countries, res = '5',
+    obtainCovariate(covname, res = '10',
                     projection, path), timeout = 60, onTimeout = 'silent'))
 
   if ('cov' %in% ls()) {
@@ -28,7 +28,7 @@ testthat::test_that('obtainCovariate can correctly obtain the covariate layer, a
   #Change CRS
   projection2 <- 'EPSG:4326'
 
-  try(cov2 <-  withTimeout(obtainCovariate(covname, countries, res = '5',
+  try(cov2 <-  withTimeout(obtainCovariate(covname, res = '10',
                          projection2, path), timeout = 60, onTimeout = 'silent'))
 
   if ('cov2' %in% ls()) {
