@@ -1,0 +1,116 @@
+---
+title: "SpeciesRichness"
+author: "Philip S. Mostert"
+date: "2023-09-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Load packages}
+
+library(intSDM)
+library(INLA)
+
+```
+
+```{r Load in Data locally}
+
+Tron <- readRDS('~/Downloads/regionGeometry.RDS')
+dt <- readRDS('~/Downloads/processedDataForPhil.RDS')
+
+```
+
+```{r Create mesh and SPDE}
+
+#Tron <- st_transform(Tron,'+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+
+#mesh <- INLA::inla.mesh.2d(boundary = inlabru::fm_as_segm(Tron),
+#                           loc = st_as_sfc(dt),
+#                           cutoff = 9000, max.edge=c(8000, 12000), offset= 800,
+#                           crs = inlabru::fm_crs('+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'))
+#ggplot() + geom_sf(data = Tron) + gg(mesh)
+
+mesh <- INLA::inla.mesh.2d(boundary = inlabru::fm_as_segm(Tron),
+                           loc = st_as_sfc(dt),
+                           cutoff = 11000, max.edge=c(39000, 46000), offset= 80000,
+                           crs = inlabru::fm_crs('+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'))
+
+spatMod <- inla.spde2.matern(mesh = mesh)
+
+```
+
+```{r Find unique locations}
+
+#dt <- st_transform(dt, mesh$crs) 
+
+dt$simpleScientificName <- as.numeric(as.factor(dt$simpleScientificName))
+
+uniqueLocations <- c(st_equals(dt))[!duplicated(lapply( c(st_equals(dt)), sort))]
+
+dt$samplingSite <- NA
+
+for (i in 1:length(uniqueLocations)) dt[unlist(uniqueLocations[[i]]), 'samplingSite'] <- i
+
+```
+
+
+```{r Split data up}
+
+PO <- dt[dt$dataType == 'PO',]
+PA <- dt[dt$dataType != 'PO',]
+
+```
+
+```{r Create Likelihoods}
+
+PALike <- like(formula = individualCount ~ .,
+               data = PA,
+               family = 'Binomial',
+               include = c('PAintercept', 'PASpde'), 
+               control.family = list(link = 'cloglog'))
+
+POLike <- like(formula = geometry ~ .,
+               data = PO,
+               family = 'cp',
+               include = c('POintercept', 'POSpde'),
+               ips = fm_int(domain = mesh, samplers = Tron))
+
+MultinomLike <- like(formula = individualCount ~ .,
+                     data = dt,
+                     include = c('MultinomIntercept', 'speciesIndex', 'siteIndex'),
+                     family = 'Poisson')
+
+```
+
+```{r Define Components}
+
+Components <- ~ - 1 + PAintercept(1) + POintercept(1) + MultinomIntercept(1) +
+                POSpde(main = geometry, model = spatMod) + 
+                PASpde(main = geometry, copy = 'POSpde', hyper = list(beta = list(fixed = FALSE))) +
+                #speciesIndex(simpleScientificName, model = 'iid',   
+                #             hyper = list(prec = list(initial = -log(0.001),
+                #                                      fixed = TRUE))) +
+                siteIndex(main = geometry, model = spatMod, group = simpleScientificName, ngroup = 37)
+                #siteIndex(samplingSite, model = 'iid', constr = TRUE)
+
+```
+
+```{r Run Model}
+
+MultinomModel <- bru(Components, POLike, PALike, MultinomLike)
+
+```
+
+```{r Predict Model}
+
+Dat <- fm_cprod(fm_pixels(mesh = mesh, mask = st_transform(Tron, mesh$crs)), 
+                data.frame(simpleScientificName = 1:max(dt$simpleScientificName)))
+
+Preds <- predict(MultinomModel, newdata = Dat, formula =  ~ (siteIndex + speciesIndex))
+
+ggplot() + gg(Preds %>% group_by(geometry) %>% summarise(su = sum(mean)), aes(col = su))
+#ggplot(Preds) + gg(Preds, aes(col = mean)) + facet_wrap(~simpleScientificName)
+```

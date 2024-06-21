@@ -1,0 +1,10 @@
+^intSDM\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^README\.Rmd$
+^data-raw$
+^\.github$
+^codecov\.yml$
+/docs/
+^Meta$
+^doc$
