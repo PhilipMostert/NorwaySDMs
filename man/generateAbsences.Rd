@@ -4,7 +4,14 @@
 \alias{generateAbsences}
 \title{Function to generate absences for data that comes from checklist data.}
 \usage{
-generateAbsences(dataList, datasetName, speciesName, responseName, Projection)
+generateAbsences(
+  dataList,
+  datasetName,
+  speciesName,
+  responseName,
+  Projection,
+  Richness
+)
 }
 \arguments{
 \item{dataList}{A List of data objects for the dataset.}
@@ -16,6 +23,8 @@ generateAbsences(dataList, datasetName, speciesName, responseName, Projection)
 \item{responseName}{The name of the response variable name.}
 
 \item{Projection}{Coordinate reference system used.}
+
+\item{Richness}{Generate absences for the richness model.}
 }
 \description{
 Function used to generate absences for data coming from lists. This function takes all the sampling locations from all the species obtained from a given dataset, and generates an absence if a species does not occur at a given location.

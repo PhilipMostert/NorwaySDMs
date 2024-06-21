@@ -8,7 +8,9 @@ sdmWorkflow(
   Workflow = NULL,
   predictionDim = c(150, 150),
   predictionData = NULL,
-  initialValues = FALSE
+  initialValues = FALSE,
+  inlaOptions = list(),
+  ipointsOptions = NULL
 )
 }
 \arguments{
@@ -19,6 +21,10 @@ sdmWorkflow(
 \item{predictionData}{Optional argument for the user to specify their own data to predict on. Must be a \code{sf} or \code{SpatialPixelsDataFrame} object. Defaults to \code{NULL}.}
 
 \item{initialValues}{Find initial values using a GLM before the model is estimated. Defaults to \code{FALSE}.}
+
+\item{inlaOptions}{Options to specify in \link[INLA]{inla} from the \code{inla} function. See \code{?inla} for more details.}
+
+\item{ipointsOptions}{Options to specify in \link[inlabru]{fm_int}'s \code{int.args} argument. See \code{?fmesher::fm_int} for more details.}
 }
 \value{
 The return of the function depends on the argument \code{Save} from the \code{startWorkflow} function. If this argument is \code{FALSE} then the objects will be saved to the specidfied directory. If this argument is \code{TRUE} then a list of different outcomes from the workflow will be returned.
