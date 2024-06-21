@@ -5,38 +5,105 @@
 #'
 species_model <- R6::R6Class(classname = 'species_model', public = list(
 
+#' @description Obtain documentation for a \code{species_model} object.
+#' @param ... Not used
+
+  help = function(...) {
+
+   ?intSDM:::species_model
+
+ }
+,
 #' @description initialize the species_model object.
 #' @param Countries Name of the countries to include in the workflow.
 #' @param Species Name of the species to include in the workflow.
 #' @param nameProject Name of the project for the workflow.
 #' @param Save Logical argument indicating if the model outputs should be saved.
+#' @param Richness Logical create a species richness model or not.
 #' @param Directory Directory where the model outputs should be saved.
 #' @param Projection The coordinate reference system used in the workflow.
 #' @param Quiet Logical variable indicating if the workflow should provide messages throughout the estimation procedure.
 #'
 
-  initialize = function(Countries, Species, nameProject, Save,
-                        Directory, Projection, Quiet = TRUE) {
+initialize = function(Countries, Species, nameProject, Save,
+                      Richness,
+                      Directory, Projection, Quiet = TRUE) {
 
-    private$Projection <- Projection
-    private$Quiet <- Quiet
+  private$Projection <- Projection
+  private$Quiet <- Quiet
 
-    if (!missing(Countries)) {
+  private$richnessEstimate <- Richness
 
-      #private$Countries <- Countries
-      countryAdded <- self$addArea(countryName = Countries)
+  if (!missing(Countries)) {
 
-    }
+    #private$Countries <- Countries
+    countryAdded <- self$addArea(countryName = Countries)
 
-    private$Species <- Species
-    private$timeStarted <- Sys.time()
-    private$Directory <- Directory
-    private$Project <- nameProject
-    private$Save <- Save
+  }
+
+  private$Species <- Species
+  private$timeStarted <- Sys.time()
+  private$Directory <- Directory
+  private$Project <- nameProject
+  private$Save <- Save
 
 
 
-  },
+},
+
+#' @param Object An \code{sf} object of the study area. If \code{NULL} then \code{countryName} needs to be provided.
+#' @param countryName Name of the countries to obtain a boundary for. This argument will then use the \link[giscoR]{gisco_get_countries} function from the \code{giscoR} package to obtain a boundary.
+#' @param ... Additional arguments passed to \link[giscoR]{gisco_get_countries}.
+#'
+#' @import sf
+#' @examples
+#' \dontrun{
+#' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
+#'                           Projection = '+proj=longlat +ellps=WGS84',
+#'                           Save = FALSE,
+#'                           saveOptions = list(projectName = 'example'))
+#'
+#' #Add boundary
+#' workflow$addArea(countryName = 'Sweden')
+#' }
+
+addArea = function(Object = NULL,
+                   countryName = NULL,
+                   ...) {
+
+  if (all(is.null(Object),
+          is.null(countryName))) stop ('One of object or countryName is required.')
+
+  if (!is.null(private$Area)) {
+
+    warning('Area already specified. Deleting all species occurance reccords added to the model.')
+
+    private$dataStructured <- list()
+    private$dataGBIF <- list()
+
+  }
+
+  if (!is.null(countryName)) {
+
+    private$Area <- obtainArea(name = countryName, projection =  private$Projection, ...)
+    private$Countries <- countryName
+
+  }
+  else {
+
+    if (!inherits(Object, 'Spatial') && !inherits(Object, 'sf')) stop('Object needs to be a sp or sf object.')
+    if (inherits(Object, 'Spatial')) Object <- as(Object, 'sf')
+
+    Object <- sf::st_transform(Object, as.character(private$Projection))
+
+    private$Area <- Object
+
+  }
+
+  if (!private$Quiet) message('Boundry object added successfully.')
+
+}
+,
 
 #' @description Prints the datasets, their data type and the number of observations, as well as the marks and their respective families.
 #' @param ... Not used.
@@ -97,7 +164,8 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 
     }
 
-    cat('Model formula: ') ## Do this
+    if (!is.null(private$covariateFormula)) cat('Model formula: ', private$covariateFormula, '\n\n')
+    if (!is.null(private$biasFormula)) cat('Bias formula:', private$biasFormula, '\n\n')
 
     if (is.null(private$CVMethod)) cat('No Cross-validation specified. Please specify using `.$crossValidation`.\n\n')
     else cat('Cross-validation:', paste(private$CVMethod, collapse = ', '),'\n\n')
@@ -156,6 +224,8 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 
       if (all(is.null(private$dataGBIF), is.null(private$dataStructured))) stop('No data objects provided. Please add using either `.$addGBIF` or `.$addStructured`.')
 
+      if (!private$richnessEstimate) {
+
       spatData <- vector(mode = 'list', length = length(private$Species))
       names(spatData) <-  sub(' ', '_', private$Species)
 
@@ -184,6 +254,22 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
       guidesComponent <- guides(col = guide_legend(title="Dataset Name")) ##Need to convert this speciesName arg for all species
       facetComponent <- facet_wrap( ~ .__species_index_var)
       }
+
+      else {
+
+        speData <- lapply(append(unlist(private$dataGBIF, recursive = FALSE),
+                                 unlist(private$dataStructured, recursive = FALSE)), function(x) x[, c('geometry', private$speciesName)])
+        speData <- do.call(rbind, speData)
+
+        speData$.__species_index_var <- speData[[private$speciesName]]
+        speciesComponent <- geom_sf(data = speData, aes(col = .__species_index_var))
+        guidesComponent <- guides(col = guide_legend(title="Species Name")) ##Need to convert this speciesName arg for all species
+        facetComponent <- NULL
+
+
+      }
+
+    }
 
     else {
 
@@ -238,6 +324,28 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 
   }
   ,
+#' @description Function to specify the workflow output from the model. This argument must be at least one of: \code{'Model'}, \code{'Prediction'}, \code{'Maps'} and \code{'Cross-validation'}, \code{'Summary'}.
+#' @param Output The names of the outputs to give in the workflow. Must be at least one of: \code{'Model'}, \code{'Prediction'}, \code{'Maps'}, \code{'Bias'} and \code{'Cross-validation'}.
+#' @examples
+#' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
+#'                           Projection = '+proj=longlat +ellps=WGS84',
+#'                           Save = FALSE,
+#'                           saveOptions = list(projectName = 'example'))
+#' workflow$workflowOutput('Predictions')
+workflowOutput = function(Output) {
+
+  if (!all(Output %in% c('Model',
+                         'Predictions',
+                         'Maps',
+                         'Bias',
+                         'Summary',
+                         'Cross-validation'))) stop('Output needs to be at least one of: Model, Predictions, Maps, Bias, Summary or Cross-validation.')
+
+  if (private$richnessEstimate & 'Cross-validation' %in% Output) stop('Cross-validation cannot work with the richness model.')
+  ##Add extra defence if 'Richness' in output and Cross-validation stop
+  private$Output <- Output
+
+},
 
 #' @description The function is used to convert structured datasets into a framework which is usable by the model. The three types of structured data allowed by this function are present absence (PA), present only (PO) and counts/abundance datasets, which are controlled using the \code{datasetType} argument. The other arguments of this function are used to specify the appropriate variable (such as response name, trial name, species name and coordinate name) names in these datasets.
 #'
@@ -247,7 +355,7 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 #' @param responseName Name of the response variable in the dataset. If \code{dataType} is \code{'PO'}, then this argument may be missing.
 #' @param trialsName Name of the trial name variable in the \code{PA} datasets.
 #' @param speciesName Name of the species variable name in the datasets.
-#' @param coordinateNames Names of the coordinate vector in the dataset.
+#' @param coordinateNames Names of the coordinate vector in the dataset. Only required if the datasets added are \code{data.frame} objects.
 #' @param generateAbsences Generates absences for \code{'PA'} data. This is done by combining all the sampling locations for all the species, and creating an absence where a given species does not occur.
 #' @import methods
 #' @import sf
@@ -361,10 +469,11 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 
     }
 
-
+if (!private$richnessEstimate) {
 
   for (species in uniqueSpecies) {
-
+##Do a if not Richness model
+    #If richness then don't filter
     private$dataStructured[[species]][[dataAdd]] <- formatStructured(data = dataStructured[[dataAdd]][data.frame(dataStructured[[dataAdd]])[speciesName] == species,],
                                                                      type =  datasetType,
                                                                      varsOld = list(trials = trialsName,
@@ -380,14 +489,33 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 
   }
 
+} else {
+
+private$dataStructured[[dataAdd]][[dataAdd]] <- formatStructured(data = dataStructured[[dataAdd]],
+                                                                 type =  datasetType,
+                                                                 varsOld = list(trials = trialsName,
+                                                                                response = responseName,
+                                                                                species = speciesName,
+                                                                                coordinates = coordinateNames),
+                                                                 varsNew = list(coordinates = private$Coordinates,
+                                                                                response = responseNew,
+                                                                                trials = private$trialsName,
+                                                                                species = private$speciesName),
+                                                                 projection = private$Projection,
+                                                                 boundary = private$Area)
+
+}
+
     if (datasetType == 'PA') {
 
     if (generateAbsences) {
 
       if (length(uniqueSpecies) == 1) warning("Can't generate absences if only one species is specified.")
 
-
-      private$dataStructured <- generateAbsences(dataList = private$dataStructured, speciesName = speciesName, datasetName = dataAdd, responseName = responseName, Projection = private$Projection)
+#Fix this for Richness model
+      private$dataStructured <- generateAbsences(dataList = private$dataStructured, speciesName = speciesName,
+                                                 datasetName = dataAdd, responseName = responseName,
+                                                 Projection = private$Projection, Richness = private$richnessEstimate)
 
 
     }
@@ -458,8 +586,6 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 #' @param Species The names of the species to include in the workflow (initially specified using \link[intSDM]{startWorkflow}). Defaults to \code{All}, which will find occurrence records for all specie specified in \link[intSDM]{startWorkflow}.
 #' @param datasetName The name to give the dataset obtained from GBIF. Cannot be \code{NULL}.
 #' @param datasetType The data type of the dataset. Defaults to \code{PO}, but may also be \code{PA} or \code{Counts}.
-#' @param responseCounts Name of the response variable for the counts data. Defaults to the standard Darwin core value \code{individualCounts}.
-#' @param responsePA Name of the response variable for the PA data. Defaults to the standard Darwin core value \code{occurrenceStatus}.
 #' @param removeDuplicates Argument used to remove duplicate observations for a species across datasets. May take a long time if there are many observations obtained across multiple datasets. Defaults to \code{FALSE}.
 #' @param generateAbsences Generates absences for \code{'PA'} data. This is done by combining all the sampling locations for all the species, and creating an absence where a given species does not occur.
 #' @param ... Additional arguments to specify the \link[rgbif]{occ_data} function from \code{rgbif}. See \code{?occ_data} for more details.
@@ -478,8 +604,8 @@ species_model <- R6::R6Class(classname = 'species_model', public = list(
 #' }
 
 addGBIF = function(Species = 'All', datasetName = NULL,
-                   datasetType = 'PO', responseCounts = 'individualCount',
-                   responsePA = 'occurrenceStatus', removeDuplicates = FALSE,
+                   datasetType = 'PO',
+                   removeDuplicates = FALSE,
                    generateAbsences = FALSE, ...) {
 
   if (is.null(private$Area)) stop('An area needs to be provided before adding species. This may be done with the `.$addArea` function.')
@@ -496,11 +622,6 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
   if (!datasetType %in% c('PO', 'PA', 'Counts')) stop('datasetType needs to be one of PO, PA and Counts.')
 
-  if (datasetType == 'PA' && is.null(responsePA)) stop('responsePA cannot be NULL if datasetType is PA.')
-
-  if (datasetType == 'Counts' && is.null(responseCounts)) stop('responseCounts cannot be NULL if datasetType is Counts.')
-
-
   ##Change the speciesName argument to private$speciesName somewhere
    #Are we changing for Name or scientific name?
 
@@ -508,6 +629,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
   if (!private$Quiet) message(paste('Finding GBIF observations for:', speciesName,'\n'))
 
+    #Change this if Richness
   GBIFspecies <- obtainGBIF(query = speciesName,
                                                 #datasetName = datasetName,
                             geometry = private$Area,
@@ -518,6 +640,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
                             ...)
 
   if (removeDuplicates) {
+
+    if (!private$richnessEstimate) {
 
   if (length(private$dataGBIF[[sub(" ", '_', speciesName)]]) > 0) {
 
@@ -541,13 +665,29 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
     }
 
+    }
+
   if (nrow(GBIFspecies) == 0) warning('All species observations were removed due to duplicates')
   else {
-
+#Change if Richness
+    ##Subset variables here: then if Richness do.call(rbind)
+    #Need response variables + species Name + datasetKey
+    GBIFspecies <- GBIFspecies[,names(GBIFspecies) %in% c('datasetKey', private$responsePA,
+                                                          private$responseCounts,
+                                                          private$trialsName)]
     GBIFspecies$speciesName <- speciesName
+
+    if (!private$richnessEstimate) {
+
     private$dataGBIF[[sub(" ", '_', speciesName)]][[datasetName]] <- GBIFspecies
     private$classGBIF[[sub(" ", '_', speciesName)]][[datasetName]] <- datasetType
 
+    } else {
+
+      private$dataGBIF[[datasetName]][[datasetName]] <- rbind(private$dataGBIF[[datasetName]][[datasetName]], GBIFspecies)
+      private$classGBIF[[datasetName]][[datasetName]] <- datasetType #Need to do something here?
+
+    }
 
   }
 
@@ -560,7 +700,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
       if (length(Species) == 1) warning("Can't generate absences if only one species is specified.")
 
-      private$dataGBIF <- generateAbsences(dataList = private$dataGBIF, speciesName = 'species', datasetName = datasetName, responseName = responsePA, Projection = private$Projection)
+      private$dataGBIF <- generateAbsences(dataList = private$dataGBIF, speciesName = 'species', datasetName = datasetName,
+                                           responseName = private$responsePA, Projection = private$Projection, Richness = private$richnessEstimate)
 
 
     }
@@ -677,61 +818,6 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     }
   ,
 
-#' @description Function to add a boundary around the study area. This function allows the user to either add their own boundary object, or obtain a country's boundary using \link[giscoR]{gisco_get_countries} from the \code{giscoR} package.
-#' @param Object A \code{sf} or \code{SpatialPolygons} object of the boundary surrounding the study area.
-#' @param countryName Name of the countries to obtain a boundary for. This argument will then use the \link[giscoR]{gisco_get_countries} function from the \code{giscoR} package to obtain a boundary.
-#' @param ... Additional arguments passed to \link[giscoR]{gisco_get_countries}.
-#'
-#' @import sf
-#' @examples
-#' \dontrun{
-#' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
-#'                           Projection = '+proj=longlat +ellps=WGS84',
-#'                           Save = FALSE,
-#'                           saveOptions = list(projectName = 'example'))
-#'
-#' #Add boundary
-#' workflow$addArea(countryName = 'Sweden')
-#' }
-
-  addArea = function(Object = NULL,
-                     countryName = NULL,
-                     ...) {
-
-    if (all(is.null(Object),
-            is.null(countryName))) stop ('One of object or countryName is required.')
-
-    if (!is.null(private$Area)) {
-
-      warning('Area already specified. Deleting all species occurance reccords added to the model.')
-
-      private$dataStructured <- list()
-      private$dataGBIF <- list()
-
-    }
-
-    if (!is.null(countryName)) {
-
-      private$Area <- obtainArea(name = countryName, projection =  private$Projection, ...)
-      private$Countries <- countryName
-
-      }
-    else {
-
-      if (!inherits(Object, 'Spatial') && !inherits(Object, 'sf')) stop('Object needs to be a sp or sf object.')
-      if (inherits(Object, 'Spatial')) Object <- as(Object, 'sf')
-
-      Object <- sf::st_transform(Object, as.character(private$Projection))
-
-      private$Area <- Object
-
-    }
-
-    if (!private$Quiet) message('Boundry object added successfully.')
-
-  }
-  ,
-
 #' @description Function to add a spatial cross validation method to the workflow.
 #' @param Method The spatial cross-validation methods to use in the workflow. May be at least one of \code{spatialBlock} or \code{Loo} (leave-one-out). See the \code{PointedSDMs} package for more details.
 #' @param blockOptions A list of options to specify the spatial block cross-validation. Must be a named list with arguments specified for: \code{k}, \code{rows_cols}, \code{plot}, \code{seed}. See \code{blockCV::cv_spatial} for more information.
@@ -747,7 +833,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
   crossValidation = function(Method, blockOptions = list(k = 5, rows_cols = c(4,4), plot = FALSE, seed = NULL)) {
 
-    if (!all(Method %in% c('spatialBlock', 'Loo'))) stop('Output needs to be at least one of: spatialBlock, Loo.')
+    if (!all(Method %in% c('spatialBlock', 'Loo'))) stop('Method needs to be at least one of: spatialBlock, Loo.')
 
     if ('spatialBlock' %in% Method) {
 
@@ -809,10 +895,10 @@ addGBIF = function(Species = 'All', datasetName = NULL,
   ,
 
 #' @description Function to specify model options for the \code{INLA} and \code{PointedSDMs} parts of the model.
-#' @param ISDM Arguments to specify in \link[PointedSDMs]{intModel} from the \code{PointedSDMs} function. This argument needs to be a named list of the following options: \code{pointCovariates}, \code{pointsIntercept}, \code{pointsSpatial} or \code{copyModel}. See \code{?intModel} for more details.
-#' @param Ipoints Options to specify in \link[inlabru]{fm_int}'s \code{int.args} argument. See \code{?fmesher::fm_int} for more details.
-#' @param INLA Options to specify in \link[INLA]{inla} from the \code{inla} function. See \code{?inla} for more details.
-#' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options: \code{predictionIntercept}, \code{samplingSize} and \code{speciesSpatial}.
+#' @param ISDM Arguments to specify in \link[PointedSDMs]{intModel} from the \code{PointedSDMs} function. This argument needs to be a named list of the following options:
+#' \enumerate{\item{\code{pointCovariates}: non-spatial covariates attached to the data points to be included in the model.} \item{\code{pointsIntercept}: Logical: intercept terms for the dataset. Defaults to \code{TRUE}} \item{\code{pointsSpatial}: Choose how the spatial effects are included in the model. If \code{'copy'} then the spatial effects are shared across the datasets, if \code{'individual'} then the spatial effects are created for each dataset individually, and if \code{'correlate'} then the spatial effects are correlated. If \code{NULL}, then spatial effects are turned off for the datasets.} \item{\code{copyModel} MOVE DOWN TO SPECIFY PRIOR}.} See \code{?PointedSDMs::startISDM} for more details on these choices.
+#' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options:
+#' \enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}}
 #' @examples
 #' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
 #'                           Projection = '+proj=longlat +ellps=WGS84',
@@ -822,8 +908,6 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'eb')),
 #'                       ISDM = list(pointsIntercept = FALSE))
   modelOptions = function(ISDM = list(),
-                          Ipoints = list(),
-                          INLA = list(),
                           Richness = list()) {
 
     if (!is.list(ISDM)) stop('ISDM needs to be a list of arguments to specify the model.')
@@ -847,15 +931,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     else
       if (!Richness[['speciesSpatial']] %in% c('shared', 'replicate', 'copy') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL, "replicate", "copy" or "shared.')
 
-    if (!is.list(INLA)) stop('INLA needs to be a list of INLA arguments to specify the model.')
-
-    if (!is.list(Ipoints)) stop('Ipoints needs to be a list of integration point arguments.')
-
-    if (!all(names(Ipoints) %in% c('method', 'nsub1', 'nsub2'))) stop('IPoints needs to be a named list with at least one of the following options: "method", "nsub1", "nsub2"')
-
     if (length(ISDM) > 0) private$optionsISDM <- ISDM
-    if (length(Ipoints) > 0) private$optionsIpoints <- Ipoints
-    if (length(INLA) > 0) private$optionsINLA <- INLA
     if (length(Richness) > 0) private$optionsRichness <- Richness
 
   }
@@ -896,8 +972,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' @param effectNames The name of the effects to specify the prior for. Must be the name of any of the covariates incldued in the model, or 'Intercept' to specify the priors for the intercept terms.
 #' @param Mean The mean of the prior distribution. Defaults to \code{0}.
 #' @param Precision The precision (inverse variance) of the prior distribution. Defaults to \code{0.01}.
-#' @param priorIntercept Prior for the precision parameter for the random intercept in the species richness model. Needs \code{workflowOutput = "Richness"}. Defaults to the default \textit{INLA} prior.
-#' @param priorGroup Prior for the precision for the \textit{iid} effect in the species spatial effect in the richness model. Needs \code{workflowOutput = "Richness"} and \code{speciesSpatial = "replicate"} in the richness options. Defualts to the default \textit{INLA} prior.
+#' @param priorIntercept Prior for the precision parameter for the random intercept in the species richness model. Needs \code{Output = "Richness"}. Defaults to the default \emph{INLA} prior.
+#' @param priorGroup Prior for the precision for the \emph{iid} effect in the species spatial effect in the richness model. Needs \code{Output = "Richness"} and \code{speciesSpatial = "replicate"} in the richness options. Defualts to the default \emph{INLA} prior.
 #
 #' @examples
 #' \dontrun{
@@ -996,12 +1072,11 @@ specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
 
   }
   ,
-#' @description Function to add bias covariates to the model.
-#' @param datasetName Name of the dataset to add the covariate to.
-#' @param Covariate A \code{spatRaster} layer to account for sampling bias.
+#' @description Add a formula to the model
+#' @param covariateFormula Change the covariate formula of the model.
+#' @param biasFormula Change the bias formula of the model
 #' @examples
 #' \dontrun{
-#' if(requireNamespace('INLA')) {
 #'
 #' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
 #'                           Projection = '+proj=longlat +ellps=WGS84',
@@ -1009,69 +1084,13 @@ specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
 #'                           saveOptions = list(projectName = 'example'))
 #' workflow$addArea(countryName = 'Sweden')
 #'
-#' workflow$addGBIF(datasetName = 'exampleGBIF',
-#'                  datasetType = 'PA',
-#'                  limit = 10000,
-#'                  coordinateUncertaintyInMeters = '0,50')
-#' #workflow$biasCovariate(datasetName = 'exampleGBIF', Covariate = distance_to_road)
+#' workflow$addCovariate(rasterStack)
+#'
+#' workflow$addFormula(covariateFormula = ~ covariate)
+#' workflow$addFormula(biasFormula = ~ biasFormula)
+#'
+#'
 #' }
-#' }
-
-biasCovariate = function(datasetName,
-                         Covariate) {
-
-  if (!all(datasetName %in% private$datasetName)) stop('Dataset specified for bias covariate not included in the workflow.')
-
-  if (!inherits(Covariate, 'SpatRaster')) stop('The covariate layer must be a spatRaster object.')
-
-  Covariate <- terra::project(Covariate, private$Projection)
-
-  #if (length(names(Object)) > 1) stop('Please provide each covariate into the workflow as their own object.')
-
-  for (cov in names(Covariate)) {
-
-    #Check this for all classes
-    maskedDF <- terra::crop(terra::mask(Covariate[cov][[1]], private$Area), private$Area)
-
-    if (all(is.na(terra::values(maskedDF)))) stop('The covariate provided and the area specified do not match.')
-
-    private$biasCovariates[[cov]] <- Covariate[cov]
-
-  }
-
-  private$biasCovNames <- unique(c(datasetName, private$biasCovNames))
-
-
-},
-
-#' @description Function to specify the workflow output from the model. This argument must be at least one of: \code{'Model'}, \code{'Prediction'}, \code{'Richness'}, \code{'Maps'} and \code{'Cross-validation'}.
-#' @param Output The names of the outputs to give in the workflow. Must be at least one of: \code{'Model'}, \code{'Prediction'}, \code{'Richness'}, \code{'Maps'}, \code{'Bias'} and \code{'Cross-validation'}.
-#' @examples
-#' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
-#'                           Projection = '+proj=longlat +ellps=WGS84',
-#'                           Save = FALSE,
-#'                           saveOptions = list(projectName = 'example'))
-#' workflow$workflowOutput('Predictions')
-  workflowOutput = function(Output) {
-
-  if (!all(Output %in% c('Model',
-                         'Predictions',
-                         'Maps',
-                         'Bias',
-                         'Richness',
-                         'Cross-validation'))) stop('Output needs to be at least one of: Model, Predictions, Maps, Bias or Cross-validation.')
-
-    private$Output <- Output
-
-  }
-  ,
-#' @description Add a formula to the model
-#' @param covariateFormula Change the covariate formula of the model.
-#' @param biasFormula Change the bias formula of the model
-#' @examples
-#'
-#'
-#'
 
 modelFormula = function(covariateFormula, biasFormula) {
 
@@ -1204,6 +1223,7 @@ species_model$set('private', 'priorIntercept', deparse1(list(prior="loggamma", p
 species_model$set('private', 'samplingSize', NULL)
 species_model$set('private', 'covariateFormula', NULL)
 species_model$set('private', 'biasFormula', NULL)
+species_model$set('private', 'richnessEstimate', FALSE)
 
 
 
