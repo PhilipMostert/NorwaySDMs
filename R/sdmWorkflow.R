@@ -4,6 +4,8 @@
 #' @param predictionDim The pixel dimensions for the prediction maps. Defaults to \code{c(150, 150)}.
 #' @param predictionData Optional argument for the user to specify their own data to predict on. Must be a \code{sf} or \code{SpatialPixelsDataFrame} object. Defaults to \code{NULL}.
 #' @param initialValues Find initial values using a GLM before the model is estimated. Defaults to \code{FALSE}.
+#' @param inlaOptions Options to specify in \link[INLA]{inla} from the \code{inla} function. See \code{?inla} for more details.
+#' @param ipointsOptions Options to specify in \link[inlabru]{fm_int}'s \code{int.args} argument. See \code{?fmesher::fm_int} for more details.
 
 #'
 #' @import PointedSDMs
@@ -37,7 +39,9 @@
 sdmWorkflow <- function(Workflow = NULL,
                         predictionDim = c(150, 150),
                         predictionData = NULL,
-                        initialValues = FALSE) {
+                        initialValues = FALSE,
+                        inlaOptions = list(),
+                        ipointsOptions = NULL) {
 
   modDirectory <- Workflow$.__enclos_env__$private$Directory
   saveObjects <- Workflow$.__enclos_env__$private$Save
@@ -88,22 +92,22 @@ sdmWorkflow <- function(Workflow = NULL,
   spatCovs <- do.call(c, unlist(list(spatCovs, Workflow$.__enclos_env__$private$biasCovariates), recursive = FALSE))
 
   IPS <- fm_int(domain = .__mesh.__, samplers = Workflow$.__enclos_env__$private$Area,
-                int.args = Workflow$.__enclos_env__$private$optionsIpoints)
+                int.args = ipointsOptions)
   st_geometry(IPS) <- 'geometry'
-  if (!all(Oputs %in% c('Richness', 'Bias'))) {
+
+  if (!Workflow$.__enclos_env__$private$richnessEstimate) {
 
   for (species in unique(c(names(Workflow$.__enclos_env__$private$dataGBIF),
                            names(Workflow$.__enclos_env__$private$dataStructured)))) {
 
    speciesNameInd <- sub(' ', '_', species)
+
    if (saveObjects) dir.create(path = paste0(modDirectory, '/', speciesNameInd))
 
    speciesDataset <- append(Workflow$.__enclos_env__$private$dataGBIF[[species]],
                             Workflow$.__enclos_env__$private$dataStructured[[species]])
 
    speciesDataset <- speciesDataset[sapply(speciesDataset, nrow) > 0]
-
-
 
   if (length(speciesDataset) == 0)  {
 
@@ -121,42 +125,34 @@ else {
 
    if (length(speciesDataset) == 1) {
 
-     initializeModel <- dataSDM$new(coordinates = .__coordinates.__, projection = .__proj.__,
-                            Inlamesh = .__mesh.__, initialnames = names(speciesDataset),
+     initializeModel <- specifyISDM$new(data = speciesDataset,
+                            projection = .__proj.__,
+                            Inlamesh = .__mesh.__,
+                            initialnames = names(speciesDataset),
                             responsecounts = .__responseCounts.__,
                             responsepa = .__responsePA.__,
-                            marksnames = NULL,
-                            marksfamily = NULL,
                             pointcovariates = NULL,
                             trialspa = .__trialsName.__,
-                            trialsmarks = NULL,
-                            speciesintercept = FALSE,
-                            speciesindependent = FALSE,
-                            speciesenvironment = FALSE,
-                            spatial = .__pointsSpatial.__,
-                            marksspatial = NULL,
-                            speciesname = NULL,
-                            formulas = NULL,
+                            spatial = 'individual',
                             intercepts = .__pointsIntercept.__,
-                            marksintercepts = NULL,
                             spatialcovariates = spatCovs,
-                            boundary = NULL,
+                            boundary = Workflow$.__enclos_env__$private$Area,
                             ips = IPS,
                             temporal = NULL,
                             temporalmodel = NULL,
-                            speciesspatial = NULL,
                             offset = NULL,
-                            copymodel = .__copyModel.__)
-     initializeModel$addData(speciesDataset)
+                            copymodel = .__copyModel.__,
+                            formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
+                                            biasFormula = Workflow$.__enclos_env__private$biasFormula))
    }
    else {
 
-  initializeModel <- PointedSDMs::intModel(speciesDataset, Mesh = .__mesh.__, Projection = .__proj.__, Coordinates = .__coordinates.__,
+  initializeModel <- PointedSDMs::startISDM(speciesDataset, Mesh = .__mesh.__, Projection = .__proj.__,
                                             responsePA = .__responsePA.__, responseCounts = .__responseCounts.__,
                                             trialsPA = .__trialsName.__, pointsSpatial = .__pointsSpatial.__,
                                             pointsIntercept = .__pointsIntercept.__ , IPS = IPS,
-                                            copyModel = .__copyModel.__, Boundary = Workflow$.__enclos_env__$private$Area,
-                                            spatialCovariates = spatCovs,
+                                            Boundary = Workflow$.__enclos_env__$private$Area,
+                                            spatialCovariates = spatCovs, #Add PointCovariates
                                             Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
                                                             biasFormula = Workflow$.__enclos_env__private$biasFormula))
 
@@ -173,9 +169,13 @@ else {
 
   }
 
+  ##Here priors for the random effects
+  if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['copyModel']])) initializeModel$specifyRandom(copyModel = deparse1(.__copyModel.__))
+  #Workflow$specifyRandom(copyModel = x)
+
   if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
 
-    if (.__pointsSpatial.__ == 'shared') initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
+    if (.__pointsSpatial.__ %in% c('shared', 'correlate')) initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
     else {
 
       for (data in names(initializeModel$spatialFields$datasetFields)) {
@@ -226,33 +226,12 @@ else {
 
 
 
-  }
+  } else biasIn <- FALSE
 
-  if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) {
-
-    updatedFormula <- formula(paste0('~ . - ', names(Workflow$.__enclos_env__$private$biasCovariates)))
-
-    if (any(names(speciesDataset) %in% Workflow$.__enclos_env__$private$biasCovNames)) {
-
-      notBias <- names(speciesDataset)[!names(speciesDataset) %in% Workflow$.__enclos_env__$private$biasCovNames]
-
-      if(length(notBias) > 0) {
-
-        biasIncl <- TRUE
-
-        for (dataset in notBias) {
-
-          initializeModel$updateFormula(datasetName = dataset, Formula = updatedFormula)
-
-        }
-
-      } else biasIncl <- FALSE
-
-
-    } else biasIncl <- FALSE
-
-
-  } else biasIncl <- FALSE
+  if (!is.null(Workflow$.__enclos_env__private$biasFormula)) biasIn <- TRUE
+  else
+    if (!biasIn) biasIn <- FALSE
+    else biasIn <- TRUE
 
   if ('Cross-validation' %in% Oputs && 'spatialBlock' %in%Workflow$.__enclos_env__$private$CVMethod) {
 
@@ -267,7 +246,7 @@ else {
   message('\nEstimating ISDM:\n\n')
 
   PSDMsMOdel <- try(PointedSDMs::fitISDM(initializeModel,
-                                     options = Workflow$.__enclos_env__$private$optionsINLA))
+                                     options = inlaOptions))
 
   if (inherits(PSDMsMOdel, 'try-error')) warning(paste0('Model estimation failed for ', species,'. Will skip the rest of the outputs.'))
 
@@ -282,13 +261,29 @@ else {
 
   }
 
+  if ('Summary' %in% Oputs) {
+
+    summariesIndex <- list(Fixed = PSDMsMOdel$summary.fixed,
+                           Hyper = PSDMsMOdel$summary.hyperpar)
+
+    if (saveObjects) {
+
+      if (!Quiet) message('\nSaving Model summaries:', '\n\n')
+
+
+      saveRDS(object = summariesIndex, file = paste0(modDirectory,'/', speciesNameInd, '/modelSummary.rds'))
+
+    } else outputList[[speciesNameInd]][['Summary']] <- summariesIndex
+
+  }
+
   if ('Cross-validation' %in% Oputs && !inherits(PSDMsMOdel, 'try-error')) {
 
 
     if ('spatialBlock' %in% Workflow$.__enclos_env__$private$CVMethod) {
 
       if (!Quiet) message('\nEstimating spatial block cross-validation:\n\n')
-      spatialBlockCV <- PointedSDMs::blockedCV(initializeModel)
+      spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
 
       if (saveObjects) {
 
@@ -332,21 +327,8 @@ else {
       }
 
 
-      #If bias covariates in model, remove them here
-      if(biasIncl) {
 
-        mdTerms <- c(rownames(PSDMsMOdel$summary.fixed), names(PSDMsMOdel$summary.random))
-
-        mdTerms <- mdTerms[!mdTerms %in% c(names(Workflow$.__enclos_env__$private$biasCovariates),
-                                           paste0(names(speciesDataset),'_biasField'),
-                                           'sharedBias_biasField')]
-
-        wBias <- formula(paste0('~ ', paste(mdTerms, collapse = '+')))
-
-        Predictions <- predict(PSDMsMOdel, data = predictionData, formula = wBias)
-
-      }
-      else Predictions <- predict(PSDMsMOdel, data = predictionData, predictor = TRUE)
+      Predictions <- predict(PSDMsMOdel, data = predictionData, predictor = TRUE)
 
       if (saveObjects) {
 
@@ -390,7 +372,7 @@ else {
       }
     biasPreds <- predict(PSDMsMOdel,
                          data = predictionData,
-                         biasfield = TRUE)
+                         bias = TRUE)
 
     if (saveObjects) {
 
@@ -409,8 +391,7 @@ else {
 
 
   }
-
-  if ('Richness' %in% Oputs) {
+  else {
 
     if (is.null(Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']])) stop('predictionIntercept needs to be provided. This can be done using .$modelOptions(Richness = list(predictionIntercept = "DATASETNAME")).')
 
@@ -421,40 +402,29 @@ else {
 
     ##Fix this
      #Need to get the datasets back together
+    spNames <- c(names(Workflow$.__enclos_env__$private$dataGBIF),
+                 names(Workflow$.__enclos_env__$private$dataStructured))
 
-    spData <- append(Workflow$.__enclos_env__$private$dataGBIF,
-                     Workflow$.__enclos_env__$private$dataStructured)
-    namesOrder <- unlist(c(sapply(spData, names)))
+    spData <- append(unlist(Workflow$.__enclos_env__$private$dataGBIF, recursive = FALSE),
+                     unlist(Workflow$.__enclos_env__$private$dataStructured, recursive = FALSE))
 
-    spData <- lapply(tapply(unlist(spData, recursive = FALSE), namesOrder, function(x) c(x)), c)
+    names(spData) <- spNames
 
-    for (dataMerge in names(spData)) {
+    message('Setting up richness model:', '\n\n')
 
-      spData[[dataMerge]] <- do.call(rbind, lapply(spData[[dataMerge]], function(x) x[, names(x) %in% c('geometry', 'speciesName', 'individualCount',
-                                                                                           'occurrenceStatus', 'numTrials', 'speciesName')]))
-
-
-    }
-
-
-   # spData <- unlist(append(Workflow$.__enclos_env__$private$dataGBIF,
-  #                   Workflow$.__enclos_env__$private$dataStructured), recursive = FALSE)
-
-   # names(spData) <- originalNames
-
-    richSetup <- PointedSDMs::intModel(spData, Mesh = .__mesh.__, Projection = .__proj.__, Coordinates = .__coordinates.__,
+    richSetup <- PointedSDMs::startSpecies(spData, Mesh = .__mesh.__, Projection = .__proj.__,
                                        responsePA = .__responsePA.__, responseCounts = .__responseCounts.__,
                                        trialsPA = .__trialsName.__, Boundary = Workflow$.__enclos_env__$private$Area,
                                        pointsIntercept = .__pointsIntercept.__,
                                        IPS = IPS,
-                                       copyModel = .__copyModel.__, speciesName = Workflow$.__enclos_env__$private$speciesName,
-                                       speciesSpatial = .__spatModel.__, ##WHICH ONE??
-                                       pointsSpatial = NULL, speciesIndependent = TRUE,
-                                       speciesEffects = list(randomIntercept = TRUE, Environmental = TRUE), #randomIntercept = NULL
+                                       speciesName = Workflow$.__enclos_env__$private$speciesName,
+                                       speciesSpatial = .__spatModel.__,
+                                       pointsSpatial = NULL, # Make this an argument
                                        spatialCovariates = spatCovs,
                                        Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
                                                        biasFormula = Workflow$.__enclos_env__$private$biasFormula))
 
+    ##Redo this
     if (!is.null(Workflow$.__enclos_env__$private$priorsFixed)) {
 
       for (var in names(Workflow$.__enclos_env__$private$priorsFixed)) {
@@ -467,6 +437,8 @@ else {
     }
 
     if (!is.null(Workflow$.__enclos_env__$private$sharedField)) richSetup$spatialFields$speciesFields$speciesField <- Workflow$.__enclos_env__$private$sharedField
+
+    #Add copy here use specifySpatial?
 
     if (!is.null(Workflow$.__enclos_env__$private$biasNames)) {
 
@@ -485,46 +457,32 @@ else {
 
     }
 
+    #Redo this with specifyRandom
     if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = FALSE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
 
     if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
               control.group = list(model = "iid", hyper = list(prec = ', Workflow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
 
-
-    if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) {
-
-      updatedFormula <- formula(paste0('~ . - ', names(Workflow$.__enclos_env__$private$biasCovariates)))
-
-      if (any(names(spData) %in% Workflow$.__enclos_env__$private$biasCovNames)) {
-
-        notBias <- names(spData)[!names(spData) %in% Workflow$.__enclos_env__$private$biasCovNames]
-
-        if(length(notBias) > 0) {
-
-          biasIncl <- TRUE
-
-          for (dataset in notBias) {
-
-            richSetup$updateFormula(datasetName = dataset, Formula = updatedFormula)
-
-          }
-
-        } else biasIncl <- FALSE
-
-
-      } else biasIncl <- FALSE
-
-
-    } else biasIncl <- FALSE
-
     if (initialValues)  Workflow$.__enclos_env__$private$optionsINLA[['bru_initial']] <- initValues(data = richSetup, formulaComponents = richSetup$.__enclos_env__$private$spatcovsNames)
 
+    message('Estimating richness model:', '\n\n')
+
       richModel <- try(PointedSDMs::fitISDM(data = richSetup,
-                                        options = Workflow$.__enclos_env__$private$optionsINLA))
+                                        options = inlaOptions))
 
       if (inherits(richModel, 'try-error')) stop('Richness model failed to estimate. Will skip the rest of the outputs.')
+      else
+        if ('Model' %in% Oputs) {
 
-      ##Predict and plot
+          if (saveObjects) {
+
+            if (!Quiet)  message('\nSaving richness model:', '\n\n')
+            saveRDS(object = richModel, file = paste0(modDirectory, '/richnessModel.rds')) #Add project name here
+
+          } else outputList[['RichnessModel']] <- richModel
+
+
+        }
 
       if (is.null(predictionData)) {
 
@@ -544,9 +502,6 @@ else {
       else predictionData$sampSize <- 1
 
       .__species.__ <- sort(unique(unlist(richModel[['species']][['speciesIn']])))
-
-      #predictionDataSP <- inlabru::fm_cprod(predictionData, data.frame(tempName = 1:length(.__species.__)))
-      #names(predictionDataSP)[names(predictionDataSP) == 'tempName'] <- Workflow$.__enclos_env__$private$speciesName
 
       .__covs.__ <- richModel[['spatCovs']][['name']]
 
@@ -573,19 +528,15 @@ else {
 
       .__thin.__ <- paste0(paste(paste0(.__species.__, '[!1:length(',.__species.__,') %in% seq(', 1:length(.__species.__),',length(',.__species.__,'),', length(.__species.__), ')] <- FALSE'), collapse=';'),';')
 
-      #.__speciesEval.__ <- paste('list(Richness = ', paste(.__species.__, collapse = ' + '), ',',
-      #                           paste(paste(paste0(.__species.__,'_probs'), '=', .__species.__, collapse = ', ')),')')
 
-
-      #predictionFormula <- paste('{',
-      #                           .__speciesFormulas.__,
-      #                           .__speciesEval.__ ,'}')
       predictionFormula <- paste('{',
                                  .__speciesFormulas.__,
                                  .__thin.__,
                                  .__speciesEval.__ ,'}')
 
       if (!inherits(richModel, 'try-error')) {
+
+      message('Creating richness maps:', '\n\n')
 
       richPredicts <- PointedSDMs:::predict.bruSDM(richModel, predictionData, #predictionDataSP?
                                                    formula = parse(text = predictionFormula))
@@ -604,17 +555,29 @@ else {
 
       richOutput <- list(Richness = predictionData, Probabilities = speciesProb)
 
+      if ('Summary' %in% Oputs) {
+
       removeList <- grepl('spatial', names(richModel$summary.random)) | names(richModel$summary.random) == 'speciesShared'
       if (paste0(richModel$species$speciesVar,'_intercepts') %in% names(richModel$summary.random)) richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]$ID <- paste0(row.names(richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]), '_intercept')
 
-      outputList[['modelResults']] <- list(Fixed = richModel$summary.fixed,
+      richnessSummary <- list(Fixed = richModel$summary.fixed,
                                            Random = do.call(rbind, richModel$summary.random[!removeList]),
                                            Hyperparameters = richModel$summary.hyperpar)
+      row.names(richnessSummary$Random) <- NULL
+
+      if (saveObjects) {
+
+        if (!Quiet)  message('\nSaving richness summaries:', '\n\n')
+        saveRDS(object = richnessSummary, file = paste0(modDirectory, '/richnessSummaries.rds')) #Add project name here
+
+      } else outputList[['Summary']] <- richnessSummary
+
+      }
 
       if (saveObjects) {
 
         if (!Quiet)  message('\nSaving richness predictions:', '\n\n')
-        saveRDS(object = richOutput, file = paste0(modDirectory, '/richnessPredictions.rds'))
+        saveRDS(object = richOutput, file = paste0(modDirectory, '/richnessPredictions.rds')) #Add project name here
 
       } else outputList[['Richness']] <- richOutput#richPredicts
 
@@ -632,12 +595,12 @@ else {
         }
         biasPreds <- predict(richModel,
                              data = predictionData,
-                             biasfield = TRUE)
+                             bias = TRUE)
 
           if (saveObjects) {
 
             if (!Quiet)  message('\nSaving predictions object:', '\n\n')
-            saveRDS(object = biasPreds, file = paste0(modDirectory,'/', '/biasRichnessPreds.rds'))
+            saveRDS(object = biasPreds, file = paste0(modDirectory,'/', '/biasRichnessPreds.rds')) #Add project name here
 
           } else outputList[[speciesNameInd]][['BiasRichness']] <- biasPreds
 
