@@ -24,8 +24,10 @@ initValues <- function(data, formulaComponents) {
     if (is.null(data$.__enclos_env__$private$speciesIntercepts)) intTerm <- FALSE
     else intTerm <- data$.__enclos_env__$private$speciesIntercepts
 
-    if (intTerm) dataIntercepts <- TRUE
+    if (data$.__enclos_env__$private$Intercepts) dataIntercepts <- TRUE
     else dataIntercepts <- FALSE
+    #if (intTerm) dataIntercepts <- TRUE
+    #else dataIntercepts <- FALSE
 
   } else if (data$.__enclos_env__$private$Intercepts) {
 
@@ -42,12 +44,14 @@ initValues <- function(data, formulaComponents) {
 
       if (!is.null(species)) {
 
-        if (!dataIntercepts) {
+        if (dataIntercepts) {
 
           data$.__enclos_env__$private$modelData[[dataset]][[1]][paste0(dataNames[dataset], '_intercept')] <- 1
           formulaComponents <- unique(c(formulaComponents, paste0(dataNames[dataset], '_intercept')))
 
-        } else {
+        }
+
+        if (!intTerm) {
 
         for (sp in species[[dataset]]) {
 
