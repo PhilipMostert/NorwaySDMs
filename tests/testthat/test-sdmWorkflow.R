@@ -79,7 +79,8 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
   copyWorkflow$addGBIF(datasetName = 'GBIF_data2', limit = 50, datasetType = 'PA')
   copyWorkflow$workflowOutput('Model')
   copyWorkflow$addMesh(max.edge = 500000) #200000
-  copyWorkflow$modelOptions(ISDM = list(pointsSpatial = 'copy', copyModel = list(beta = list(fixed = TRUE))))
+  copyWorkflow$modelOptions(ISDM = list(pointsSpatial = 'copy'))
+  copyWorkflow$specifyPriors(copyModel = list(beta = list(fixed = TRUE)))
   copyMod <- sdmWorkflow(copyWorkflow)
 
   expect_setequal(names(copyMod$Fraxinus_excelsior$Model$summary.random), c("GBIF_data_spatial", "GBIF_data2_spatial"))

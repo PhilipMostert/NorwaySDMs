@@ -271,14 +271,13 @@ testthat::test_that('modelOptions correctly adds options', {
 
   skip_on_cran()
 
-  expect_error(workflow$modelOptions(ISDM = list(marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
-  expect_error(workflow$modelOptions(ISDM = list(pointsSpatial = FALSE, marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
+  expect_error(workflow$modelOptions(ISDM = list(marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "Offset".')
+  expect_error(workflow$modelOptions(ISDM = list(pointsSpatial = FALSE, marks = TRUE)), 'ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "Offset".')
 
-  workflow$modelOptions(ISDM = list(pointsSpatial = 'copy', copyModel = list(beta = list(fixed = TRUE))))
+  workflow$modelOptions(ISDM = list(pointsSpatial = 'copy'))
 
-  expect_setequal(names(workflow$.__enclos_env__$private$optionsISDM), c('pointsSpatial', 'copyModel'))
+  expect_setequal(names(workflow$.__enclos_env__$private$optionsISDM), c('pointsSpatial'))
 
-  expect_true(workflow$.__enclos_env__$private$optionsISDM$copyModel$beta$fixed == TRUE)
   expect_true(workflow$.__enclos_env__$private$optionsISDM$pointsSpatial == 'copy')
 
 })
@@ -355,10 +354,13 @@ testthat::test_that('specifyPriors can correctly specify the correct priors', {
   expect_setequal(workflow$.__enclos_env__$private$priorsFixed$Intercept, c(100, 1))
 
   workflow$specifyPriors(priorIntercept = list(prior = 'pc.prec', param = c(2, 0.1)),
-                         priorGroup = list(prior = 'pc.prec', param = c(3, 0.5)))
+                         priorGroup = list(prior = 'pc.prec', param = c(3, 0.5)),
+                         copyModel = list(beta = list(fixed = TRUE)))
 
   expect_equal(workflow$.__enclos_env__$private$priorGroup, "list(prior = \"pc.prec\", param = c(3, 0.5))")
   expect_equal(workflow$.__enclos_env__$private$priorIntercept,"list(prior = \"pc.prec\", param = c(2, 0.1))")
+
+  expect_identical(workflow$.__enclos_env__$private$copyModel, "list(beta = list(fixed = TRUE))")
 
 })
 

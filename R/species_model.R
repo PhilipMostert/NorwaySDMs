@@ -895,7 +895,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
 #' @description Function to specify model options for the \code{INLA} and \code{PointedSDMs} parts of the model.
 #' @param ISDM Arguments to specify in \link[PointedSDMs]{startISDM} from the \code{PointedSDMs} function. This argument needs to be a named list of the following options:
-#' \enumerate{\item{\code{pointCovariates}: non-spatial covariates attached to the data points to be included in the model.} \item{\code{pointsIntercept}: Logical: intercept terms for the dataset. Defaults to \code{TRUE}} \item{\code{pointsSpatial}: Choose how the spatial effects are included in the model. If \code{'copy'} then the spatial effects are shared across the datasets, if \code{'individual'} then the spatial effects are created for each dataset individually, and if \code{'correlate'} then the spatial effects are correlated. If \code{NULL}, then spatial effects are turned off for the datasets.}} See \code{?PointedSDMs::startISDM} for more details on these choices.
+#' \enumerate{\item{\code{pointCovariates}: non-spatial covariates attached to the data points to be included in the model.} \item{\code{pointsIntercept}: Logical: intercept terms for the dataset. Defaults to \code{TRUE}} \item{\code{pointsSpatial}: Choose how the spatial effects are included in the model. If \code{'copy'} then the spatial effects are shared across the datasets, if \code{'individual'} then the spatial effects are created for each dataset individually, and if \code{'correlate'} then the spatial effects are correlated. If \code{NULL}, then spatial effects are turned off for the datasets.} \item{\code{Offset}: The name of the offset variable.}} See \code{?PointedSDMs::startISDM} for more details on these choices.
 #' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options:
 #' \enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}}
 #' @examples
@@ -912,7 +912,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     if (!is.list(ISDM)) stop('ISDM needs to be a list of arguments to specify the model.')
 
     if (any(!names(ISDM) %in% c('pointCovariates', 'pointsIntercept', #Remove pointCovariates perhaps?
-                                'pointsSpatial', 'copyModel'))) stop('ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "copyModel".')
+                                'pointsSpatial', 'Offset'))) stop('ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "Offset".')
 
     if (any(!names(Richness) %in% c('predictionIntercept', 'speciesSpatial', 'samplingSize'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
 

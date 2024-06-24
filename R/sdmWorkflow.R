@@ -64,20 +64,27 @@ sdmWorkflow <- function(Workflow = NULL,
     if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointsSpatial']])) .__pointsSpatial.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial
     else .__pointsSpatial.__ <- 'copy'#'shared' #Should this be copy?
 
-    if (!is.null(Workflow$.__enclos_env__$private$copyModel)) .__copyModel.__ <- Workflow$.__enclos_env__$private$optionsISDM['copyModel']
-    else .__copyModel.__ <- deparse1('list(beta = list(fixed = FALSE))')
-
     if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['pointsIntercept']])) .__pointsIntercept.__ <- Workflow$.__enclos_env$private$optionsISDM$pointsIntercept
     else .__pointsIntercept.__ <- TRUE
+
+    if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['pointCovariates']])) .__pointCovariates.__ <- Workflow$.__enclos_env$private$optionsISDM$pointsIntercept
+    else .__pointCovariates.__ <- NULL
+
+    if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['Offset']])) .__Offset.__ <- Workflow$.__enclos_env$private$optionsISDM$Offset
+    else .__Offset.__ <- NULL
 
 
   } else {
 
     .__pointsSpatial.__ <- 'copy'
-    .__copyModel.__ <- eval(parse(text = 'list(beta = list(fixed = FALSE))'))
     .__pointsIntercept.__ <- TRUE
+    .__Offset.__ <- NULL
+    .__pointCovariates.__ <- NULL
 
   }
+
+  if (!is.null(Workflow$.__enclos_env__$private$copyModel)) .__copyModel.__ <- Workflow$.__enclos_env__$private$copyModel
+  else .__copyModel.__ <- deparse1('list(beta = list(fixed = FALSE))')
 
   .__mesh.__ <- Workflow$.__enclos_env__$private$Mesh
   .__proj.__ <- Workflow$.__enclos_env__$private$Projection
@@ -131,7 +138,7 @@ else {
                             initialnames = names(speciesDataset),
                             responsecounts = .__responseCounts.__,
                             responsepa = .__responsePA.__,
-                            pointcovariates = NULL,
+                            pointcovariates = .__pointCovariates.__,
                             trialspa = .__trialsName.__,
                             spatial = 'individual',
                             intercepts = .__pointsIntercept.__,
@@ -140,7 +147,7 @@ else {
                             ips = IPS,
                             temporal = NULL,
                             temporalmodel = NULL,
-                            offset = NULL,
+                            offset =  .__Offset.__,
                             copymodel = .__copyModel.__,
                             formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
                                             biasFormula = Workflow$.__enclos_env__private$biasFormula))
@@ -151,8 +158,10 @@ else {
                                             responsePA = .__responsePA.__, responseCounts = .__responseCounts.__,
                                             trialsPA = .__trialsName.__, pointsSpatial = .__pointsSpatial.__,
                                             pointsIntercept = .__pointsIntercept.__ , IPS = IPS,
+                                            Offset =  .__Offset.__,
+                                            pointCovariates = .__pointCovariates.__,
                                             Boundary = Workflow$.__enclos_env__$private$Area,
-                                            spatialCovariates = spatCovs, #Add PointCovariates
+                                            spatialCovariates = spatCovs,
                                             Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
                                                             biasFormula = Workflow$.__enclos_env__private$biasFormula))
 
@@ -170,7 +179,7 @@ else {
   }
 
   ##Here priors for the random effects
-  if (!is.null(Workflow$.__enclos_env__$private$copyModel)) initializeModel$specifyRandom(copyModel = deparse1(.__copyModel.__))
+  if (!is.null(Workflow$.__enclos_env__$private$copyModel)) initializeModel$specifyRandom(copyModel = .__copyModel.__)
   #Workflow$specifyRandom(copyModel = x)
 
   if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
@@ -417,6 +426,8 @@ else {
                                        trialsPA = .__trialsName.__, Boundary = Workflow$.__enclos_env__$private$Area,
                                        pointsIntercept = .__pointsIntercept.__,
                                        IPS = IPS,
+                                       pointCovariates = .__pointCovariates.__,
+                                       Offset =  .__Offset.__,
                                        speciesName = Workflow$.__enclos_env__$private$speciesName,
                                        speciesSpatial = .__spatModel.__,
                                        pointsSpatial = NULL, # Make this an argument
