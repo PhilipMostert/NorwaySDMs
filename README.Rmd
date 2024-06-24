@@ -47,7 +47,7 @@ install.packages('intSDM')
 The package contains two main functions: `startWorkflow` which initializes the workflow, and `sdmWorkflow`, which estimates one of the specified outcomes of the workflow. `startWorkflow` produces an [*R6*](https://r6.r-lib.org), which has a multitude of different *slot* functions to help customize the workflow. These include:
 
 | Function name         | Function use                                                                                                                                                           |
-|--------------|----------------------------------------------------------|
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `.$plot()`            | Plot data and other objects required for the model.                                                                                                                    |
 | `.$addStructured()`   | Add data not available on GBIF.                                                                                                                                        |
 | `.$addMesh()`         | Create an *inla.mesh* object.                                                                                                                                          |
