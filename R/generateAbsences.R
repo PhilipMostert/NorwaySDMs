@@ -31,7 +31,7 @@ generateAbsences <- function(dataList, datasetName,
     if (nrow(absences) > 0) {
       nms <- names(dataList[[species]][[datasetName]])[!names(dataList[[species]][[datasetName]]) %in% 'geometry']
       absences[nms] <- NA
-      absences[,'speciesName'] <- sub(" ", '_', species) # <- absences[speciesName]
+      absences[,'speciesName'] <- species #<- sub(" ", '_', species) # <- absences[speciesName]
       absences[responseName] <- 0
 
       dataList[[species]][[datasetName]] <- rbind(dataList[[species]][[datasetName]], absences)
@@ -50,7 +50,7 @@ generateAbsences <- function(dataList, datasetName,
       if (nrow(absences) > 0) {
         nms <- names(datasetData[[1]])[!names(datasetData[[1]]) %in% 'geometry']
         absences[nms] <- NA
-        absences[,'speciesName'] <- sub(" ", '_', species) # <- absences[speciesName]
+        absences[,'speciesName'] <- species#sub(" ", '_', species) # <- absences[speciesName]
         absences[responseName] <- 0
 
         dataList[[datasetName]][[datasetName]] <- rbind(dataList[[datasetName]][[datasetName]], absences)
