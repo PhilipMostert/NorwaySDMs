@@ -629,14 +629,16 @@ addGBIF = function(Species = 'All', datasetName = NULL,
   if (!private$Quiet) message(paste('Finding GBIF observations for:', speciesName,'\n'))
 
     #Change this if Richness
-  GBIFspecies <- obtainGBIF(query = speciesName,
+  try(GBIFspecies <- obtainGBIF(query = speciesName,
                                                 #datasetName = datasetName,
                             geometry = private$Area,
                                                 #country = private$Countries,
                             projection = private$Projection,
                                                 #varsKeep = c(responseCounts, responsePA),
                             datasettype = datasetType,
-                            ...)
+                            ...))
+
+  if (!inherits(GBIFspecies, 'try-error')) {
 
   if (removeDuplicates) {
 
@@ -671,7 +673,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #Change if Richness
     ##Subset variables here: then if Richness do.call(rbind)
     #Need response variables + species Name + datasetKey
-    GBIFspecies <- GBIFspecies[,names(GBIFspecies) %in% c('datasetKey', private$responsePA,
+    GBIFspecies <- GBIFspecies[,names(GBIFspecies) %in% c('datasetKey', 'sampleSizeValue',
+                                                          private$responsePA,
                                                           private$responseCounts,
                                                           private$trialsName)]
     GBIFspecies$speciesName <- speciesName
@@ -689,7 +692,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     }
 
   }
-
+}
 
   }
 
