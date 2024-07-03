@@ -64,13 +64,13 @@ sdmWorkflow <- function(Workflow = NULL,
     if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointsSpatial']])) .__pointsSpatial.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial
     else .__pointsSpatial.__ <- 'copy'#'shared' #Should this be copy?
 
-    if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['pointsIntercept']])) .__pointsIntercept.__ <- Workflow$.__enclos_env$private$optionsISDM$pointsIntercept
+    if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointsIntercept']])) .__pointsIntercept.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsIntercept
     else .__pointsIntercept.__ <- TRUE
 
-    if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['pointCovariates']])) .__pointCovariates.__ <- Workflow$.__enclos_env$private$optionsISDM$pointsIntercept
+    if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointCovariates']])) .__pointCovariates.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsIntercept
     else .__pointCovariates.__ <- NULL
 
-    if (!is.null(Workflow$.__enclos_env$private$optionsISDM[['Offset']])) .__Offset.__ <- Workflow$.__enclos_env$private$optionsISDM$Offset
+    if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['Offset']])) .__Offset.__ <- Workflow$.__enclos_env__$private$optionsISDM$Offset
     else .__Offset.__ <- NULL
 
 
@@ -469,7 +469,7 @@ else {
     }
 
     #Redo this with specifyRandom
-    if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = FALSE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
+    if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = TRUE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
 
     if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
               control.group = list(model = "iid", hyper = list(prec = ', Workflow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
