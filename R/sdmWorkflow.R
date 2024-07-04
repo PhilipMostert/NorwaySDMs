@@ -469,10 +469,9 @@ else {
     }
 
     #Redo this with specifyRandom
-    if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$changeComponents(paste0('speciesName_intercepts(main = speciesName, model = "iid", constr = TRUE, hyper = list(prec = ', Workflow$.__enclos_env__$private$priorIntercept,'))'), print = FALSE)
+    if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$specifyRandom(speciesIntercepts = Workflow$.__enclos_env__$private$priorIntercept)
 
-    if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$changeComponents(paste0('speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup,
-              control.group = list(model = "iid", hyper = list(prec = ', Workflow$.__enclos_env__$private$priorGroup, ')))'), print = FALSE)
+    if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$specifyRandom(speciesGroup = Workflow$.__enclos_env__$private$priorGroup)
 
     if (initialValues)  Workflow$.__enclos_env__$private$optionsINLA[['bru_initial']] <- initValues(data = richSetup, formulaComponents = richSetup$.__enclos_env__$private$spatcovsNames)
 

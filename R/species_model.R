@@ -473,7 +473,7 @@ if (!private$richnessEstimate) {
   for (species in uniqueSpecies) {
 ##Do a if not Richness model
     #If richness then don't filter
-    private$dataStructured[[species]][[dataAdd]] <- formatStructured(data = dataStructured[[dataAdd]][data.frame(dataStructured[[dataAdd]])[speciesName] == species,],
+    strucData <- formatStructured(data = dataStructured[[dataAdd]][data.frame(dataStructured[[dataAdd]])[speciesName] == species,],
                                                                      type =  datasetType,
                                                                      varsOld = list(trials = trialsName,
                                                               response = responseName,
@@ -486,22 +486,35 @@ if (!private$richnessEstimate) {
                                                projection = private$Projection,
                                                boundary = private$Area)
 
+    if (nrow(strucData) > 0) {
+
+      private$dataStructured[[species]][[dataAdd]] <- strucData
+      nmRM <- FALSE
+
+    } else nmRM <- TRUE
+
   }
 
 } else {
 
-private$dataStructured[[dataAdd]][[dataAdd]] <- formatStructured(data = dataStructured[[dataAdd]],
-                                                                 type =  datasetType,
-                                                                 varsOld = list(trials = trialsName,
-                                                                                response = responseName,
-                                                                                species = speciesName,
-                                                                                coordinates = coordinateNames),
-                                                                 varsNew = list(coordinates = private$Coordinates,
-                                                                                response = responseNew,
-                                                                                trials = private$trialsName,
-                                                                                species = private$speciesName),
-                                                                 projection = private$Projection,
-                                                                 boundary = private$Area)
+strucData <- formatStructured(data = dataStructured[[dataAdd]],
+                              type =  datasetType,
+                              varsOld = list(trials = trialsName,
+                              response = responseName,
+                              species = speciesName,
+                              coordinates = coordinateNames),
+                              varsNew = list(coordinates = private$Coordinates,
+                              response = responseNew,
+                              trials = private$trialsName,
+                              species = private$speciesName),
+                              projection = private$Projection,
+                              boundary = private$Area)
+if (nrow(strucData) > 0) {
+
+  private$dataStructured[[dataAdd]][[dataAdd]] <- strucData
+  nmRM <- FALSE
+
+} else nmRM <- TRUE
 
 }
 
@@ -512,9 +525,13 @@ private$dataStructured[[dataAdd]][[dataAdd]] <- formatStructured(data = dataStru
       if (length(uniqueSpecies) == 1) warning("Can't generate absences if only one species is specified.")
 
 #Fix this for Richness model
+      if (length(private$dataStructured) > 0) {
+
       private$dataStructured <- generateAbsences(dataList = private$dataStructured, speciesName = speciesName,
                                                  datasetName = dataAdd, responseName = responseName,
                                                  Projection = private$Projection, Richness = private$richnessEstimate)
+
+      }
 
 
     }
@@ -522,7 +539,7 @@ private$dataStructured[[dataAdd]][[dataAdd]] <- formatStructured(data = dataStru
 
     }
 
-    private$datasetName <- c(datasetName, private$datasetName)
+    if(!nmRM) private$datasetName <- c(datasetName, private$datasetName)
 
 
 
@@ -1011,9 +1028,9 @@ specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
 
   }
 
-  private$priorIntercept <- deparse1(priorIntercept)
-  private$priorGroup <- deparse1(priorGroup)
-  private$copyModel <- deparse1(copyModel)
+  private$priorIntercept <- priorIntercept#deparse1(priorIntercept)
+  private$priorGroup <- priorGroup#deparse1(priorGroup)
+  private$copyModel <- copyModel#deparse1(copyModel)
   ##Something here for the random effects prior for the random iid model
 
 
