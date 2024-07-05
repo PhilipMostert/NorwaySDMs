@@ -748,7 +748,7 @@ Function to specify model options for the \code{INLA} and \code{PointedSDMs} par
 \enumerate{\item{\code{pointCovariates}: non-spatial covariates attached to the data points to be included in the model.} \item{\code{pointsIntercept}: Logical: intercept terms for the dataset. Defaults to \code{TRUE}} \item{\code{pointsSpatial}: Choose how the spatial effects are included in the model. If \code{'copy'} then the spatial effects are shared across the datasets, if \code{'individual'} then the spatial effects are created for each dataset individually, and if \code{'correlate'} then the spatial effects are correlated. If \code{NULL}, then spatial effects are turned off for the datasets.} \item{\code{Offset}: The name of the offset variable.}} See \code{?PointedSDMs::startISDM} for more details on these choices.}
 
 \item{\code{Richness}}{Options to specify the richness model. This argument needs to be a named list of the following options:
-\enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}}}
+\enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}\item{\code{speciesIntercept:} If \code{TRUE} (default) incorporate a random intercept for the species, if \code{FALSE} use a fixed intercept and if \code{NULL} include no intercept for the species.}}}
 }
 \if{html}{\out{</div>}}
 }
@@ -819,7 +819,8 @@ Function to specify priors for the fixed effects in the model. The priors of the
   Precision = 0.01,
   copyModel = list(beta = list(fixed = FALSE)),
   priorIntercept = list(prior = "loggamma", param = c(1, 5e-05)),
-  priorGroup = list(prior = "loggamma", param = c(1, 5e-05))
+  priorGroup = list(model = "iid", hyper = list(prec = list(prior = "loggamma", param =
+    c(1, 5e-05))))
 )}\if{html}{\out{</div>}}
 }
 

@@ -428,9 +428,10 @@ else {
                                        IPS = IPS,
                                        pointCovariates = .__pointCovariates.__,
                                        Offset =  .__Offset.__,
+                                       speciesIntercept = Workflow$.__enclos_env__$private$speciesIntercept,
                                        speciesName = Workflow$.__enclos_env__$private$speciesName,
                                        speciesSpatial = .__spatModel.__,
-                                       pointsSpatial = NULL, # Make this an argument
+                                       pointsSpatial = .__pointsSpatial.__, # Make this an argument
                                        spatialCovariates = spatCovs,
                                        Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
                                                        biasFormula = Workflow$.__enclos_env__$private$biasFormula))
@@ -447,7 +448,25 @@ else {
 
     }
 
-    if (!is.null(Workflow$.__enclos_env__$private$sharedField)) richSetup$spatialFields$speciesFields$speciesField <- Workflow$.__enclos_env__$private$sharedField
+    if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
+
+      richSetup$spatialFields$speciesFields$speciesField <- Workflow$.__enclos_env__$private$sharedField
+
+      if (!is.null(.__pointsSpatial.__)) {
+
+        if (.__pointsSpatial.__ == 'copy') {
+
+          for (dtt in names(richSetup$spatialFields$datasetFields)) {
+
+        richSetup$spatialFields$datasetFields[[dtt]] <- Workflow$.__enclos_env__$private$sharedField
+
+          }
+
+        }
+
+      }
+
+      }
 
     #Add copy here use specifySpatial?
 
@@ -471,8 +490,11 @@ else {
     #Redo this with specifyRandom
     if (!is.null(Workflow$.__enclos_env__$private$priorIntercept)) richSetup$specifyRandom(speciesIntercepts = Workflow$.__enclos_env__$private$priorIntercept)
 
+    if (!is.null(Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial)) {
+
     if (!is.null(Workflow$.__enclos_env__$private$priorGroup) && Workflow$.__enclos_env__$private$optionsRichness$speciesSpatial == 'replicate') richSetup$specifyRandom(speciesGroup = Workflow$.__enclos_env__$private$priorGroup)
 
+    }
     if (initialValues)  Workflow$.__enclos_env__$private$optionsINLA[['bru_initial']] <- initValues(data = richSetup, formulaComponents = richSetup$.__enclos_env__$private$spatcovsNames)
 
     message('Estimating richness model:', '\n\n')
@@ -508,6 +530,9 @@ else {
       else .__predSpat.__ <- '+speciesShared'
       #If copy then add here too
 
+      if (is.null(Workflow$.__enclos_env__$private$sharedField)) .__pointSpat.__ <- NULL
+      else .__pointSpat.__ <- paste0('+',Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']], '_spatial')
+
       if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
       else predictionData$sampSize <- 1
 
@@ -528,7 +553,15 @@ else {
           else .__covsSP.__ <- NULL
 
         }
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, '+', paste0(Workflow$.__enclos_env__$private$speciesName,'_intercepts') , .__predSpat.__,', inverse = TRUE)')
+
+        if (!is.null(Workflow$.__enclos_env__$private$speciesIntercept)) {
+
+          if (Workflow$.__enclos_env__$private$speciesIntercept) .__specIntercept.__ <- paste0('+',Workflow$.__enclos_env__$private$speciesName,'_intercepts')
+          else .__specIntercept.__ <- paste0('+',.__species.__[indexSp], '_intercept')
+
+        } else .__specIntercept.__ <- NULL
+
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
 
       }
 
@@ -553,7 +586,8 @@ else {
 
       speciesProb <- mapply(function(x, seq) {
 
-        prob <- x[x[[Workflow$.__enclos_env__$private$speciesName]] == seq,]
+        if (!is.null(x[[Workflow$.__enclos_env__$private$speciesName]])) prob <- x[x[[Workflow$.__enclos_env__$private$speciesName]] == seq,]
+        else prob <- x[x[['speciesSpatialGroup']] == seq,]
         list(prob)
 
       }, richPredicts[[1]], seq = 1:length(richPredicts[[1]]))

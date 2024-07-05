@@ -3,7 +3,7 @@
 #' @export
 #' @importFrom R6 R6Class
 #'
-species_model <- R6::R6Class(classname = 'species_model', public = list(
+species_model <- R6::R6Class(classname = 'species_model', lock_objects = FALSE, public = list(
 
 #' @description Obtain documentation for a \code{species_model} object.
 #' @param ... Not used
@@ -33,6 +33,9 @@ initialize = function(Countries, Species, nameProject, Save,
   private$Quiet <- Quiet
 
   private$richnessEstimate <- Richness
+
+  if (!Richness) private$optionsInla[['pointsSpatial']] <- 'copy'
+  else private$optionsInla[['pointsSpatial']] <- NULL
 
   if (!missing(Countries)) {
 
@@ -917,7 +920,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' @param ISDM Arguments to specify in \link[PointedSDMs]{startISDM} from the \code{PointedSDMs} function. This argument needs to be a named list of the following options:
 #' \enumerate{\item{\code{pointCovariates}: non-spatial covariates attached to the data points to be included in the model.} \item{\code{pointsIntercept}: Logical: intercept terms for the dataset. Defaults to \code{TRUE}} \item{\code{pointsSpatial}: Choose how the spatial effects are included in the model. If \code{'copy'} then the spatial effects are shared across the datasets, if \code{'individual'} then the spatial effects are created for each dataset individually, and if \code{'correlate'} then the spatial effects are correlated. If \code{NULL}, then spatial effects are turned off for the datasets.} \item{\code{Offset}: The name of the offset variable.}} See \code{?PointedSDMs::startISDM} for more details on these choices.
 #' @param Richness Options to specify the richness model. This argument needs to be a named list of the following options:
-#' \enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}}
+#' \enumerate{\item{\code{predictionIntercept}: The name of the dataset to use as the prediction intercept in the richness model. The sampling size of the protocol must be known.} \item{\code{samplingSize}: The sample area size for the dataset provided in \code{predictionIntercept}. The units should be the same as specified in \link{startWorkflow}} \item{\code{speciesSpatial}: Specify the species spatial model. If \code{'replicate'} then create a spatial effect for each species with shared hyperparameters, if \code{'copy'} create a spatial effect for each species. If \code{NULL} then the spatial effects for the species will be turned off.}\item{\code{speciesIntercept:} If \code{TRUE} (default) incorporate a random intercept for the species, if \code{FALSE} use a fixed intercept and if \code{NULL} include no intercept for the species.}}
 #' @examples
 #' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
 #'                           Projection = '+proj=longlat +ellps=WGS84',
@@ -934,7 +937,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     if (any(!names(ISDM) %in% c('pointCovariates', 'pointsIntercept', #Remove pointCovariates perhaps?
                                 'pointsSpatial', 'Offset'))) stop('ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "Offset".')
 
-    if (any(!names(Richness) %in% c('predictionIntercept', 'speciesSpatial', 'samplingSize'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
+    if (any(!names(Richness) %in% c('predictionIntercept', 'speciesSpatial', 'samplingSize', 'speciesIntercept'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
 
     if ('predictionIntercept' %in% names(Richness)) {
 
@@ -943,6 +946,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
       if (!Richness[['predictionIntercept']] %in% private$datasetName) stop('predictionIntercept needs to be a name of one of the datasets in the model.')
 
     }
+
+    if ('speciesIntercept' %in% names(Richness)) private$speciesIntercept <- Richness[['speciesIntercept']]
 
     if ('samplingSize' %in% names(Richness)) private$samplingSize <- Richness[['samplingSize']]
 
@@ -1014,7 +1019,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 specifyPriors = function(effectNames, Mean = 0, Precision = 0.01,
                          copyModel = list(beta = list(fixed = FALSE)),
                          priorIntercept = list(prior="loggamma", param = c(1, 5e-5)),
-                         priorGroup = list(prior = "loggamma", param = c(1, 5e-5))) {
+                         priorGroup = list(model = "iid", hyper = list(prec = list(prior = "loggamma", param = c(1, 5e-5))))) {
 
   if (!missing(effectNames)) {
 
@@ -1246,6 +1251,7 @@ species_model$set('private', 'samplingSize', NULL)
 species_model$set('private', 'covariateFormula', NULL)
 species_model$set('private', 'biasFormula', NULL)
 species_model$set('private', 'richnessEstimate', FALSE)
+species_model$set('private', 'speciesIntercept', TRUE)
 
 
 
