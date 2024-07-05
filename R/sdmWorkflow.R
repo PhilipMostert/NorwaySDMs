@@ -418,6 +418,9 @@ else {
 
     names(spData) <- spNames
 
+    wMain <- which(spNames == Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']])
+    spData <- spData[c(spNames[wMain], spNames[-wMain])]
+
     message('Setting up richness model:', '\n\n')
 
     richSetup <- PointedSDMs::startSpecies(spData, Mesh = .__mesh.__, Projection = .__proj.__,
@@ -529,7 +532,7 @@ else {
       else .__predSpat.__ <- '+speciesShared'
       #If copy then add here too
 
-      if (is.null(Workflow$.__enclos_env__$private$sharedField)) .__pointSpat.__ <- NULL
+      if (is.null(Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial)) .__pointSpat.__ <- NULL
       else .__pointSpat.__ <- paste0('+',Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']], '_spatial')
 
       if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
@@ -560,7 +563,7 @@ else {
 
         } else .__specIntercept.__ <- NULL
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(-log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
 
       }
 
