@@ -61,8 +61,7 @@ sdmWorkflow <- function(Workflow = NULL,
 
   if (length(Workflow$.__enclos_env__$private$optionsISDM) > 0) {
 
-    if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointsSpatial']])) .__pointsSpatial.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial
-    else .__pointsSpatial.__ <- 'copy'#'shared' #Should this be copy?
+    .__pointsSpatial.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial
 
     if (!is.null(Workflow$.__enclos_env__$private$optionsISDM[['pointsIntercept']])) .__pointsIntercept.__ <- Workflow$.__enclos_env__$private$optionsISDM$pointsIntercept
     else .__pointsIntercept.__ <- TRUE
@@ -646,7 +645,7 @@ else {
             if (!Quiet)  message('\nSaving predictions object:', '\n\n')
             saveRDS(object = biasPreds, file = paste0(modDirectory,'/', '/biasRichnessPreds.rds')) #Add project name here
 
-          } else outputList[[speciesNameInd]][['BiasRichness']] <- biasPreds
+          } else outputList[['BiasRichness']] <- biasPreds
 
       }
 
