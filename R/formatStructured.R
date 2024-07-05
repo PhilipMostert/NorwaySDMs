@@ -35,7 +35,7 @@ formatStructured <- function(dataOCC, type, varsOld, varsNew, projection, bounda
 
   initRows <- nrow(dataOCC)
 
-  dataOCC <- dataOCC[, names(dataOCC)[names(dataOCC) %in% unlist(varsOld)]]
+  #dataOCC <- dataOCC[, names(dataOCC)[names(dataOCC) %in% unlist(varsOld)]]
 
   st_geometry(dataOCC) <- 'geometry'
   dataOCC <- sf::st_transform(dataOCC, as.character(projection))
