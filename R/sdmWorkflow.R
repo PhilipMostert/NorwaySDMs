@@ -149,7 +149,7 @@ else {
                             offset =  .__Offset.__,
                             copymodel = .__copyModel.__,
                             formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
-                                            biasFormula = Workflow$.__enclos_env__private$biasFormula))
+                                            biasFormula = Workflow$.__enclos_env__$private$biasFormula))
    }
    else {
 
@@ -181,7 +181,7 @@ else {
   if (!is.null(Workflow$.__enclos_env__$private$copyModel)) initializeModel$specifyRandom(copyModel = .__copyModel.__)
   #Workflow$specifyRandom(copyModel = x)
 
-  if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
+  if (!is.null(.__pointsSpatial.__)) {
 
     if (.__pointsSpatial.__ %in% c('shared', 'correlate')) initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
     else {
@@ -277,7 +277,6 @@ else {
     if (saveObjects) {
 
       if (!Quiet) message('\nSaving Model summaries:', '\n\n')
-
 
       saveRDS(object = summariesIndex, file = paste0(modDirectory,'/', speciesNameInd, '/modelSummary.rds'))
 
@@ -518,6 +517,8 @@ else {
 
         }
 
+      if (any(c('Predictions', 'Maps') %in% Oputs) && !inherits(richModel, 'try-error')) {
+
       if (is.null(predictionData)) {
 
         .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'sf')
@@ -601,25 +602,6 @@ else {
 
       richOutput <- list(Richness = predictionData, Probabilities = speciesProb)
 
-      if ('Summary' %in% Oputs) {
-
-      removeList <- grepl('spatial', names(richModel$summary.random)) | names(richModel$summary.random) == 'speciesShared'
-      if (paste0(richModel$species$speciesVar,'_intercepts') %in% names(richModel$summary.random)) richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]$ID <- paste0(row.names(richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]), '_intercept')
-
-      richnessSummary <- list(Fixed = richModel$summary.fixed,
-                                           Random = do.call(rbind, richModel$summary.random[!removeList]),
-                                           Hyperparameters = richModel$summary.hyperpar)
-      row.names(richnessSummary$Random) <- NULL
-
-      if (saveObjects) {
-
-        if (!Quiet)  message('\nSaving richness summaries:', '\n\n')
-        saveRDS(object = richnessSummary, file = paste0(modDirectory, '/richnessSummaries.rds')) #Add project name here
-
-      } else outputList[['Summary']] <- richnessSummary
-
-      }
-
       if (saveObjects) {
 
         if (!Quiet)  message('\nSaving richness predictions:', '\n\n')
@@ -627,6 +609,28 @@ else {
 
       } else outputList[['Richness']] <- richOutput#richPredicts
 
+      }
+
+      }
+
+      if ('Summary' %in% Oputs) {
+
+        removeList <- grepl('spatial', names(richModel$summary.random)) | names(richModel$summary.random) == 'speciesShared'
+        if (paste0(richModel$species$speciesVar,'_intercepts') %in% names(richModel$summary.random)) richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]$ID <- paste0(row.names(richModel$summary.random[[paste0(richModel$species$speciesVar,'_intercepts')]]), '_intercept')
+
+        richnessSummary <- list(Fixed = richModel$summary.fixed,
+                                Random = do.call(rbind, richModel$summary.random[!removeList]),
+                                Hyperparameters = richModel$summary.hyperpar)
+        row.names(richnessSummary$Random) <- NULL
+
+        if (saveObjects) {
+
+          if (!Quiet)  message('\nSaving richness summaries:', '\n\n')
+          saveRDS(object = richnessSummary, file = paste0(modDirectory, '/richnessSummaries.rds')) #Add project name here
+
+        } else outputList[['Summary']] <- richnessSummary
+
+      }
 
       if ('Bias' %in% Oputs) {
 
@@ -643,15 +647,12 @@ else {
                              data = predictionData,
                              bias = TRUE)
 
-          if (saveObjects) {
+        if (saveObjects) {
 
-            if (!Quiet)  message('\nSaving predictions object:', '\n\n')
-            saveRDS(object = biasPreds, file = paste0(modDirectory,'/', '/biasRichnessPreds.rds')) #Add project name here
+          if (!Quiet)  message('\nSaving predictions object:', '\n\n')
+          saveRDS(object = biasPreds, file = paste0(modDirectory,'/', '/biasRichnessPreds.rds')) #Add project name here
 
-          } else outputList[['BiasRichness']] <- biasPreds
-
-      }
-
+        } else outputList[['BiasRichness']] <- biasPreds
 
       }
 
