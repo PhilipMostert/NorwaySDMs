@@ -162,7 +162,7 @@ else {
                                             Boundary = Workflow$.__enclos_env__$private$Area,
                                             spatialCovariates = spatCovs,
                                             Formulas = list(covariateFormula = Workflow$.__enclos_env__$private$covariateFormula,
-                                                            biasFormula = Workflow$.__enclos_env__private$biasFormula))
+                                                            biasFormula = Workflow$.__enclos_env__$private$biasFormula))
 
    }
 
