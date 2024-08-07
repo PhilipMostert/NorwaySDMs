@@ -53,7 +53,9 @@ sdmWorkflow <- function(Workflow = NULL,
   Oputs <- Workflow$.__enclos_env__$private$Output
   outputList <-list()
 
-  if ('Bias' %in% Oputs && is.null(Workflow$.__enclos_env__$private$biasNames)) stop('Bias specified as output but no bias fields were added. Please do this with .$biasFields')
+  if ('Bias' %in% Oputs &&
+      all(is.null(Workflow$.__enclos_env__$private$biasNames),
+          is.null(Workflow$.__enclos_env__$private$biasFormula))) stop('Bias specified as output but no bias fields were added. Please do this with .$biasFields')
 
   if (is.null(Workflow$.__enclos_env__$private$CVMethod) && 'Cross-Validation' %in% Workflow$.__enclos_env__$private$Output) stop('Cross-validation specified as model output but no method provided. Please specify cross-validation method using the `.$crossValidation` function.')
 
@@ -236,7 +238,7 @@ else {
 
   } else biasIn <- FALSE
 
-  if (!is.null(Workflow$.__enclos_env__private$biasFormula)) biasIn <- TRUE
+  if (!is.null(Workflow$.__enclos_env__$private$biasFormula)) biasIn <- TRUE
   else
     if (!biasIn) biasIn <- FALSE
     else biasIn <- TRUE
@@ -271,7 +273,24 @@ else {
 
   if ('Summary' %in% Oputs) {
 
-    summariesIndex <- list(Fixed = PSDMsMOdel$summary.fixed,
+    if ('Fixed__Effects__Comps' %in% names(PSDMsMOdel$summary.random)) {
+
+      fixedRandom <-PSDMsMOdel$summary.random$Fixed__Effects__Comps
+      row.names(fixedRandom) <- fixedRandom$ID
+      fixedRandom$ID <- NULL
+
+    } else fixedRandom <- data.frame()
+
+    if ('Bias__Effects__Comps' %in% names(PSDMsMOdel$summary.random)) {
+
+      biasFixed <-PSDMsMOdel$summary.random$Bias__Effects__Comps
+      row.names(biasFixed) <- biasFixed$ID
+      biasFixed$ID <- NULL
+
+    } else biasFixed <- data.frame()
+
+
+    summariesIndex <- list(Fixed = rbind(PSDMsMOdel$summary.fixed, fixedRandom, biasFixed),
                            Hyper = PSDMsMOdel$summary.hyperpar)
 
     if (saveObjects) {
