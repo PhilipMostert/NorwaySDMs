@@ -459,6 +459,8 @@ workflowOutput = function(Output) {
 
     uniqueSpecies <- unique(dataStructured[[dataAdd]][[speciesName]])
 
+    if (identical(uniqueSpecies, character(0))) stop('Dataset has 0 rows. Please remove the dataset.')
+
     if (!all(uniqueSpecies %in% sub(" ", "_", private$Species))) {
 
       warning('Species found in dataset not specified in the original startWorkflow call. Removing observations for those species.')
@@ -937,6 +939,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
     if (any(!names(ISDM) %in% c('pointCovariates', 'pointsIntercept', #Remove pointCovariates perhaps?
                                 'pointsSpatial', 'Offset'))) stop('ISDM needs to be a named list with at least one of the following options: "pointCovariates", "pointsIntercept", "pointsSpatial" or "Offset".')
 
+    if (private$richnessEstimate) {
+
     if (any(!names(Richness) %in% c('predictionIntercept', 'speciesSpatial', 'samplingSize', 'speciesIntercept'))) stop('Richness needs to be a named list with at least one of the following options: "predictionIntercept".')
 
     if ('predictionIntercept' %in% names(Richness)) {
@@ -944,6 +948,8 @@ addGBIF = function(Species = 'All', datasetName = NULL,
       if (length(Richness[['predictionIntercept']] ) > 1) stop('predictionIntercept needs to contain only one element.')
 
       if (!Richness[['predictionIntercept']] %in% private$datasetName) stop('predictionIntercept needs to be a name of one of the datasets in the model.')
+
+    }
 
     }
 
@@ -1203,7 +1209,7 @@ obtainMeta = function(Number = TRUE,
   listKeys <- vector(mode = 'list', length = length(datasetKeys))
   names(listKeys) <- datasetKeys
 
-  for (key in datasetKeys) listKeys[[key]] <- rgbif::gbif_citation(x = key)
+  for (key in datasetKeys) listKeys[[key]] <- suppressWarnings(rgbif::gbif_citation(x = key))
 
   print(listKeys)
 
