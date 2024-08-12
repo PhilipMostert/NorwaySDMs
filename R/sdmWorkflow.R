@@ -314,7 +314,7 @@ else {
 
       if (!Quiet) message('\nEstimating spatial block cross-validation:\n\n')
 
-      if (Workflow$blockCVType == 'DIC') spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
+      if (Workflow$.__enclos_env__$private$blockCVType == 'DIC') spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
       else {
 
         blockCVPredName <- names(PSDMsMOdel$dataType)[PSDMsMOdel$dataType == 'Present absence'][1]
