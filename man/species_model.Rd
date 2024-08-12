@@ -705,7 +705,8 @@ Function to add a spatial cross validation method to the workflow.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{species_model$crossValidation(
   Method,
-  blockOptions = list(k = 5, rows_cols = c(4, 4), plot = FALSE, seed = NULL)
+  blockOptions = list(k = 5, rows_cols = c(4, 4), plot = FALSE, seed = 123),
+  blockCVType = "DIC"
 )}\if{html}{\out{</div>}}
 }
 
@@ -715,6 +716,8 @@ Function to add a spatial cross validation method to the workflow.
 \item{\code{Method}}{The spatial cross-validation methods to use in the workflow. May be at least one of \code{spatialBlock} or \code{Loo} (leave-one-out). See the \code{PointedSDMs} package for more details.}
 
 \item{\code{blockOptions}}{A list of options to specify the spatial block cross-validation. Must be a named list with arguments specified for: \code{k}, \code{rows_cols}, \code{plot}, \code{seed}. See \code{blockCV::cv_spatial} for more information.}
+
+\item{\code{blockCVType}}{The cross-validation method to complete if \code{Method = 'spatialBlock'}. May be one of \code{'DIC'} (default) which will iteratively return the DIC scores for each block, or \code{'Predict'}. This method return scores of marginal likelihood for each combination of dataset across all blocks, by fitting a model on all blocks but one, and predicting on the left out block. The prediction dataset is automatically chosen as the first PA dataset added to the model. Note that this may take a long time to estimate if there are many datasets included in the model.}
 }
 \if{html}{\out{</div>}}
 }
