@@ -923,7 +923,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
        }
 
-
+     private$CVMethod <- Method
      return(spatPlot)
 
 
