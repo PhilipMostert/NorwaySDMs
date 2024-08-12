@@ -163,8 +163,8 @@ addArea = function(Object = NULL,
     }
     else cat(names(private$Covariates), '\n\n')
 
-    if (!is.null(private$covariateFormula)) cat('Model formula: ', private$covariateFormula, '\n\n')
-    if (!is.null(private$biasFormula)) cat('Bias formula:', private$biasFormula, '\n\n')
+    if (!is.null(private$covariateFormula)) cat('Model formula: ', deparse1(private$covariateFormula), '\n\n')
+    if (!is.null(private$biasFormula)) cat('Bias formula:', deparse1(private$biasFormula), '\n\n')
 
     if (is.null(private$CVMethod)) cat('No Cross-validation specified. Please specify using `.$crossValidation`.\n\n')
     else cat('Cross-validation:', paste(private$CVMethod, collapse = ', '),'\n\n')
@@ -845,6 +845,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #' @description Function to add a spatial cross validation method to the workflow.
 #' @param Method The spatial cross-validation methods to use in the workflow. May be at least one of \code{spatialBlock} or \code{Loo} (leave-one-out). See the \code{PointedSDMs} package for more details.
 #' @param blockOptions A list of options to specify the spatial block cross-validation. Must be a named list with arguments specified for: \code{k}, \code{rows_cols}, \code{plot}, \code{seed}. See \code{blockCV::cv_spatial} for more information.
+#' @param blockCVType The cross-validation method to complete if \code{Method = 'spatialBlock'}. May be one of \code{'DIC'} (default) which will iteratively return the DIC scores for each block, or \code{'Predict'}. This method return scores of marginal likelihood for each combination of dataset across all blocks, by fitting a model on all blocks but one, and predicting on the left out block. The prediction dataset is automatically chosen as the first PA dataset added to the model. See \link[PointedSDMs]{blockedCV} for more information. Note that this may take a long time to estimate if there are many datasets included in the model.
 #'
 #' @import blockCV
 #' @examples
@@ -855,12 +856,30 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #'
 #' workflow$crossValidation(Method = 'Loo')
 
-  crossValidation = function(Method, blockOptions = list(k = 5, rows_cols = c(4,4), plot = FALSE, seed = NULL)) {
+  crossValidation = function(Method, blockOptions = list(k = 5, rows_cols = c(4,4), plot = FALSE, seed = 123),
+                             blockCVType = 'DIC') {
+
+   #Make new argument called predictOptions
 
     if (!all(Method %in% c('spatialBlock', 'Loo'))) stop('Method needs to be at least one of: spatialBlock, Loo.')
 
     if ('spatialBlock' %in% Method) {
 
+      if (!blockCVType %in% c('DIC', 'Predict')) stop('blockCVType must be one of "DIC" or "Predict"')
+
+      if (blockCVType == 'Predict') {
+
+        paStructured <- any(unlist(lapply(unlist(private$dataStructured, recursive = FALSE), function(x) {
+
+          workflow$.__enclos_env__$private$responsePA %in% names(x)
+
+        })))
+
+        if (!'PA' %in% unique(unlist(private$classGBIF)) & !paStructured) warning('At least one PA dataset is needed before using blockCVType as "Predict".')
+
+      }
+
+      private$blockCVType <- blockCVType
 
      if (is.null(blockOptions$seed)) blockOptions$seed <- round(abs(rnorm(n = 1, mean = 100000, sd = 100000)))
 
@@ -876,7 +895,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
      names(spatPlot) <- paste('Printing plot for',private$Species)
 
 
-       for (species in 1:length(private$Species)) {
+       for (species in gsub(' ', '_', private$Species)) { #1:length
 
        spatData <- lapply(append(private$dataGBIF[[species]], private$dataStructured[[species]]), function(x) x$geometry)
 
@@ -897,7 +916,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
          geom_sf_text(data = blocksPlot$data, aes(label = folds)) +
          geom_sf(data = sf::st_boundary(private$Area)) +
          geom_sf(data = boundData, aes(col = as.character(.__block_index))) +
-         ggtitle(paste('Cross-validation blocking for', private$Species[species])) +
+         ggtitle(paste('Cross-validation blocking for', species)) +
          guides(col=guide_legend(title="Folds"))
 
 
@@ -1258,6 +1277,7 @@ species_model$set('private', 'covariateFormula', NULL)
 species_model$set('private', 'biasFormula', NULL)
 species_model$set('private', 'richnessEstimate', FALSE)
 species_model$set('private', 'speciesIntercept', TRUE)
+species_model$set('private', 'blockCVType', 'DIC')
 
 
 

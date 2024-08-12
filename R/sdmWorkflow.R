@@ -185,6 +185,8 @@ else {
 
   if (!is.null(.__pointsSpatial.__)) {
 
+    if (!is.null(Workflow$.__enclos_env__$private$sharedField)) {
+
     if (.__pointsSpatial.__ %in% c('shared', 'correlate')) initializeModel$spatialFields$sharedField$sharedField <- Workflow$.__enclos_env__$private$sharedField
     else {
 
@@ -193,6 +195,8 @@ else {
         initializeModel$spatialFields$datasetFields[[data]] <- Workflow$.__enclos_env__$private$sharedField
 
       }
+
+    }
 
     }
 
@@ -309,7 +313,14 @@ else {
     if ('spatialBlock' %in% Workflow$.__enclos_env__$private$CVMethod) {
 
       if (!Quiet) message('\nEstimating spatial block cross-validation:\n\n')
-      spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
+
+      if (Workflow$blockCVType == 'DIC') spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
+      else {
+
+        blockCVPredName <- names(PSDMsMOdel$dataType)[PSDMsMOdel$dataType == 'Present absence'][1]
+        spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions, method = 'Predict', predictName = blockCVPredName)
+      }
+
 
       if (saveObjects) {
 
