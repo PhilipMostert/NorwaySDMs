@@ -317,7 +317,7 @@ else {
       if (Workflow$.__enclos_env__$private$blockCVType == 'DIC') spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions)
       else {
 
-        blockCVPredName <- names(PSDMsMOdel$dataType)[PSDMsMOdel$dataType == 'Present absence'][1]
+        blockCVPredName <- names(PSDMsMOdel$dataType)[PSDMsMOdel$dataType != 'Present only'][1]
         spatialBlockCV <- PointedSDMs::blockedCV(initializeModel, options = inlaOptions, method = 'Predict', predictName = blockCVPredName)
       }
 
