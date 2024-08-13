@@ -564,6 +564,8 @@ else {
       #If copy then add here too
 
       if (is.null(Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial)) .__pointSpat.__ <- NULL
+      else
+        if (Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial == 'shared') .__pointSpat.__ <- '+shared_spatial'
       else .__pointSpat.__ <- paste0('+',Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']], '_spatial')
 
       if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
@@ -594,7 +596,7 @@ else {
 
         } else .__specIntercept.__ <- NULL
 
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(-log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
+        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
 
       }
 
