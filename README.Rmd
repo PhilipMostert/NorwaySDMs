@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# intSDM
+# *intSDM*
 
 <!-- badges: start -->
 
@@ -23,7 +23,9 @@ knitr::opts_chunk$set(
 
 <!-- badges: end -->
 
-The goal of *intSDM* is to assist users in creating a reproducible workflow for large-scale integrated species distribution models. The package does this by providing the tools and methods to obtain species' occurrence data from [GBIF](https://www.gbif.org) and environmental covariates from [WorldClim](https://www.worldclim.org). The package then estimates the integrated species distribution model using a Bayesian framework with the integrated nested Laplace approximation method.
+The goal of *intSDM* is to assist users in creating a reproducible workflow for large-scale integrated species distribution models (ISDM). The package does this by providing the tools and functions to obtain species' occurrence data from [GBIF](https://www.gbif.org) and environmental covariates from [WorldClim](https://www.worldclim.org), specify the components of an ISDM, estimate the model, and produce useful outputs. The package estimates the ISDM using a Bayesian framework with the [integrated nested Laplace approximation](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2008.00700.x) method, which is computationally efficient in comparison to MCMC methods. Furthermore, the package builds wrapper functions around [inlabru](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13168) and [PointedSDMs](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.14091), two *R* packages designed to simplify modelling spatial processes and integrated species distribution models respectively. As a result, good knowledge of both these packages is required before using *intSDM*.
+
+The outputs of the model are objects which are typically useful in species distribution modelling analyses. These include: models, predictions, maps of predictions and cross-validation scores. The default of *intSDM* is to produce single-species models and outputs; however the package does also allow multi-species models to assist the user in obtaining estimates of species richness.
 
 ## Installation
 
@@ -32,14 +34,12 @@ You can install the development version of this package from [GitHub](https://gi
 ```{r Github, eval = FALSE}
 #install.packages('devtools')
 devtools::install_github("PhilipMostert/intSDM")
-
 ```
 
 or directly through CRAN:
 
 ```{r CRAN install, eval = FALSE}
 install.packages('intSDM')
-
 ```
 
 ## Functionality
@@ -47,7 +47,7 @@ install.packages('intSDM')
 The package contains two main functions: `startWorkflow` which initializes the workflow, and `sdmWorkflow`, which estimates one of the specified outcomes of the workflow. `startWorkflow` produces an [*R6*](https://r6.r-lib.org), which has a multitude of different *slot* functions to help customize the workflow. These include:
 
 | Function name         | Function use                                                                                                                                                           |
-|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|------------------|------------------------------------------------------|
 | `.$plot()`            | Plot data and other objects required for the model.                                                                                                                    |
 | `.$addStructured()`   | Add data not available on GBIF.                                                                                                                                        |
 | `.$addMesh()`         | Create an *inla.mesh* object.                                                                                                                                          |
@@ -63,4 +63,17 @@ The package contains two main functions: `startWorkflow` which initializes the w
 | `.$modelFormula`      | Add a formula for the covariates and bias of the model.                                                                                                                |
 | `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                                                                            |
 
-An example of the package in-use is provided as a vignette within the package.
+Documentation and examples for each of these slot functions may easily be obtained using `.$help()`.
+
+The outputs of the model are specified using `.$workflowOutput`, and these may include any number of:
+
+| Output               | Returns                                                                                                                                         |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `'Model'`            | A *PointedSDMs* model object, which is essentially an *R-INLA* model object. This object could be used further to ask numerous other questions. |
+| `'Predictions'`      | An *sf* *data.frame* object containing the estimated statistics of the log intensity at the study locations.                                    |
+| `'Maps'`             | A *ggplot* object of the map of predictions.                                                                                                    |
+| `'Bias'`             | An *sf data.frame* object containing the estimated bias (either second spatial effect or covariates) at the study locations.                    |
+| `'Summary'`          | A list of summaries of the fixed and random effects included in the model.                                                                      |
+| `'Cross-validation'` | A summary of the cross-validation scores obtained.                                                                                              |
+
+Examples of the package being used is provided as vignettes within the package.
