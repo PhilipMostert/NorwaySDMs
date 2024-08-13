@@ -85,7 +85,7 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
 
   expect_setequal(names(copyMod$Fraxinus_excelsior$Model$summary.random), c("GBIF_data_spatial", "GBIF_data2_spatial"))
   expect_equal(as.character(copyMod$Fraxinus_excelsior$Model$componentsJoint)[2],
-               "-1 + GBIF_data_spatial(main = geometry, model = GBIF_data_field) + GBIF_data2_spatial(main = geometry, copy = \"GBIF_data_spatial\", hyper = \"list(beta = list(fixed = TRUE))\") + GBIF_data_intercept(1) + GBIF_data2_intercept(1)")
+               "-1 + GBIF_data_spatial(main = geometry, model = GBIF_data_field) + GBIF_data2_spatial(main = geometry, copy = \"GBIF_data_spatial\", hyper = list(beta = list(fixed = TRUE))) + GBIF_data_intercept(1) + GBIF_data2_intercept(1)")
 
   unlink('./tests/testthatexample', recursive = TRUE)
 
@@ -115,7 +115,7 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
   workflow$addGBIF(datasetName = 'GBIF_data', limit = 50) #Get less species
   workflow$addGBIF(datasetName = 'GBIF_data2', limit = 50, datasetType = 'PA')
   expect_error(sdmWorkflow(Workflow = workflow)) #Test no output given
-  workflow$workflowOutput('Model')
+  workflow$workflowOutput(c('Model', 'Predictions'))
   expect_error(sdmWorkflow(Workflow = workflow)) #Test no mesh provided
   workflow$addMesh(max.edge = 500000) #200000
   #Test something about CV-method -- none specified but given as output
@@ -132,7 +132,7 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
   RichModel <- readRDS(file = './testthatexample/richnessModel.rds')
   expect_setequal(rownames(RichModel$summary.fixed), c("GBIF_data_intercept", "GBIF_data2_intercept"))
   expect_equal(deparse1(RichModel$componentsJoint),
-               "~-1 + speciesShared(main = geometry, model = speciesField) + GBIF_data_intercept(1) + GBIF_data2_intercept(1) + speciesName_intercepts(main = speciesName, model = \"iid\", constr = FALSE, hyper = list(prec = list(prior = \"loggamma\", param = c(1, 5e-05))))")
+               "~-1 + shared_spatial(main = geometry, model = shared_field) + speciesShared(main = geometry, model = speciesField) + GBIF_data_intercept(1) + GBIF_data2_intercept(1) + speciesName_intercepts(main = speciesName, model = \"iid\", constr = TRUE, hyper = list(prec = list(prior = \"loggamma\", param = c(1, 5e-05))))")
   rm(RichModel)
   unlink('./testthatexample', recursive = TRUE)
 

@@ -264,6 +264,10 @@ testthat::test_that('crossValidation correctly specifies the correct cross-valid
 
   expect_equal(workflow$.__enclos_env__$private$blockOptions$rows_cols, c(4,5))
 
+  expect_error(workflow$crossValidation(Method = 'spatialBlock', blockOptions = list(k =2, rows_cols = c(4,5)), blockCVType = 'xx'), 'blockCVType must be one of "DIC" or "Predict"')
+
+  workflow$crossValidation(Method = 'spatialBlock', blockOptions = list(k =2, rows_cols = c(4,5)), blockCVType = 'Predict')
+  expect_equal(workflow$.__enclos_env__$private$blockCVType, 'Predict')
 
 })
 
@@ -357,10 +361,10 @@ testthat::test_that('specifyPriors can correctly specify the correct priors', {
                          priorGroup = list(prior = 'pc.prec', param = c(3, 0.5)),
                          copyModel = list(beta = list(fixed = TRUE)))
 
-  expect_equal(workflow$.__enclos_env__$private$priorGroup, "list(prior = \"pc.prec\", param = c(3, 0.5))")
-  expect_equal(workflow$.__enclos_env__$private$priorIntercept,"list(prior = \"pc.prec\", param = c(2, 0.1))")
+  expect_equal(workflow$.__enclos_env__$private$priorGroup, list(prior = "pc.prec", param = c(3, 0.5)))
+  expect_equal(workflow$.__enclos_env__$private$priorIntercept,list(prior = "pc.prec", param = c(2, 0.1)))
 
-  expect_identical(workflow$.__enclos_env__$private$copyModel, "list(beta = list(fixed = TRUE))")
+  expect_identical(workflow$.__enclos_env__$private$copyModel, list(beta = list(fixed = TRUE)))
 
 })
 
