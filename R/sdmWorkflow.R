@@ -77,7 +77,8 @@ sdmWorkflow <- function(Workflow = NULL,
 
   } else {
 
-    .__pointsSpatial.__ <- 'copy'
+    if (!Workflow$.__enclos_env__$private$richnessEstimate) .__pointsSpatial.__ <- 'copy'
+    else  .__pointsSpatial.__ <- NULL
     .__pointsIntercept.__ <- TRUE
     .__Offset.__ <- NULL
     .__pointCovariates.__ <- NULL
@@ -623,6 +624,8 @@ else {
 
         if (!is.null(x[[Workflow$.__enclos_env__$private$speciesName]])) prob <- x[x[[Workflow$.__enclos_env__$private$speciesName]] == seq,]
         else prob <- x[x[['speciesSpatialGroup']] == seq,]
+        prob <- prob[, c('mean', 'sd', 'q0.025', 'q0.5', 'q0.975', 'median',
+                         Workflow$.__enclos_env__$private$speciesName)]
         list(prob)
 
       }, richPredicts[[1]], seq = 1:length(richPredicts[[1]]))
@@ -631,6 +634,11 @@ else {
       predictionData$q0.025 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.025))
       predictionData$q0.5 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.5))
       predictionData$q0.975 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.975))
+
+      ##Filter predData + speciesProbs
+       #For the richness we need mean, median and quantiles
+       #For the prediction data we need stats + species ID and name
+      predictionData <- predictionData[, c('mean', 'q0.025', 'q0.5', 'q0.975')]
 
       richOutput <- list(Richness = predictionData, Probabilities = speciesProb)
 
