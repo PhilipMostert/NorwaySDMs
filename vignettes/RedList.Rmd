@@ -60,7 +60,7 @@ The other arguments (*saveOptions* and *Save)* should be used if the user wants 
 ```{r initialize workflow}
 
 workflow <- startWorkflow(
-        Projection = '+proj=tmerc +lat_0=58 +lon_0=6.05625 +k=1 +x_0=0 +y_0=0 +a=6377492.018 +units=km +no_defs',
+        Projection = '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=km +no_defs',
         Species = c("Fraxinus_excelsior", "Ulmus_glabra", "Arnica_montana"),
         saveOptions = list(projectName =  'Vascular'), Save = FALSE
         )
@@ -69,12 +69,14 @@ workflow <- startWorkflow(
 
 ### Select area
 
-Next we specify the study domain for the study: in this case Norway. This can be achieved using either the *countryName* argument which will then access the object from the *giscoR* [@giscoR] R package, or by using *Object* and supplying our own polygon object. In this case we choose to add our own polygon object becuase we wish to manipulate it in order to construct a better mesh object later.
+Next we specify the study domain for the study: in this case Norway. This can be achieved using either the *countryName* argument which will then access the object from the *giscoR* [@giscoR] R package, or by using *Object* and supplying our own polygon object. In this case we choose to add our own polygon object because the rigid coastline of a unedited Norway polygon will cause issues further down.
 
 We then use `.$plot()` to see what the boundary looks like.
 
 ```{r addArea}
 
+yes <- FALSE
+if (yes) {
 Norway <- giscoR::gisco_get_countries(country = 'Norway', resolution = 60)
 Norway <- st_cast(st_as_sf(Norway), 'POLYGON')
 Norway <- Norway[which.max(st_area(Norway)),]
@@ -82,7 +84,10 @@ Norway <- rmapshaper::ms_simplify(Norway, keep = 0.8)
 
 workflow$addArea(Object = Norway)
 workflow$plot()
+}
 
+Norway <- readRDS('IntegratedLakefish/Norway.rds')
+workflow$addArea(Object = Norway)
 ```
 
 ### Adding occurrence data
@@ -149,7 +154,7 @@ One of the objects required for our model is an *inla.mesh* object, which we wil
 ```{r INLA}
 
 workflow$addMesh(cutoff = 20 * 0.25,
-                 max.edge = c(60, 80)*0.25,
+                 max.edge = c(60, 80)*0.5, #0.25
                  offset= c(30, 40))
 
 workflow$plot(Mesh = TRUE)
@@ -163,7 +168,7 @@ Furthermore we also used *penalizing complexity* (PC) priors in our model, which
 ```{r Priors}
 
 workflow$specifySpatial(prior.range = c(100, 0.1),
-                        prior.sigma = c(0.5, 0.1),
+                        prior.sigma = c(1, 0.1),
                         constr = FALSE)
 
 ```
@@ -186,39 +191,52 @@ We specify an additional spatial effect for the citizen science data using `.$bi
 ```{r Bias}
 
 workflow$biasFields('CZ', 
-                    prior.range = c(0.1, 0.1),
-                    prior.sigma = c(0.1, 0.1),
+                    prior.range = c(100, 0.1), #1 #0.1
+                    prior.sigma = c(1, 0.1), #1 #0.1
                     constr = FALSE)
 
 ```
 
 ### Model options
 
-Finally we specify some options used in `INLA::inla()`, as well as the output from our workflow -- in this case we want plots of the log-intensity for each species.
+We specify the model output using the function `.$workflowOutput`. In this workflow, we want to return the *R-INLA* model objects and the maps of the predicted intensity.
 
 ```{r options}
 
-workflow$workflowOutput('Maps')
-
-workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'ccd',
-                                                    strategy = 'simplified.laplace',
-                                                    cmin = 0,
-                                                    control.vb=list(enable = FALSE)),
-                                  safe = TRUE,
-                                  verbose = TRUE,
-                                  inla.mode = 'experimental'))
+#workflow$crossValidation(Method = 'Loo')
+workflow$workflowOutput(c('Maps', 'Model', 'Bias'))
 
 ```
 
 ## Running workflow
 
-The workflow is then implemented using the `sdmWorkflow()` function. Due to the lengthy time it requires to produce this map, inference is not made in this vignette. However the script is available below for the user to run the model themselves.
+The workflow is then implemented using the `sdmWorkflow()` function. We also specify some *R-INLA* options to speed and stabilize the estimates of the model using `inlaOptions`.
+
+Due to the lengthy time it requires to produce this map, inference is not made in this vignette. However the script is available below for the user to run the model themselves.
 
 ```{r Maps}
 
-Maps <- sdmWorkflow(workflow)
+Maps <- sdmWorkflow(workflow,inlaOptions = list(control.inla=list(int.strategy = 'ccd',
+                                                    strategy = 'gaussian',
+                                                    cmin = 0,
+                                                    diagonal = 0.1,
+                                                    control.vb=list(enable = FALSE)),
+                                  safe = TRUE,
+                                  verbose = TRUE,
+                                  inla.mode = 'experimental'),
+              predictionDim = c(400, 400))
+```
+
+## Maps
+
+Maps of the predicted intensity are given as follows.
+
+```{r MapsOut}
+
 Maps$Fraxinus_excelsior$Maps
 Maps$Ulmus_glabra$Maps
 Maps$Arnica_montana$Maps
+
+saveRDS(Maps, 'Maps.rds')
 
 ```

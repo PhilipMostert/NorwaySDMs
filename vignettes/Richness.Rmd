@@ -1,13 +1,27 @@
 ---
-title: "SpeciesRichness"
-author: "Philip S. Mostert"
-date: "2023-09-22"
-output: html_document
+title: "Species richness example"
+output: rmarkdown::html_vignette
+date: "`r Sys.Date()`"
+bibliography: '`r system.file("References.bib", package="intSDM")`'
+biblio-style: authoryear
+vignette: >
+  %\VignetteIndexEntry{RichnessModel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  fig.width=8, 
+  fig.height=5,
+  warning = FALSE,
+  message = FALSE)
 ```
+
+In this example we will show a quick example of a species Richness model using *intSDM*. We consider 7 randomly selected species of Vascular plants distibuted across the Netherlands. These species were obtained from two different datasets: *Dutch vegetation database*, which we treat as structured detection/non-detection data, and *iNaturalist,* which we treat as unstructured presence-only data.
 
 ```{r Load packages}
 
@@ -16,101 +30,117 @@ library(INLA)
 
 ```
 
-```{r Load in Data locally}
+To begin the workflow, we use the function `startWorkflow` and specify the names of the species for which we want to obtain estimates for. To construct a richness model, we specify `Richness = TRUE`, which will construct a multi-species model rather than create models for each species independently. This richness model will include an *iid* random effect unique for each species, a species-level environmental effect, and a species-level random effect. In order to speed up the estimation procedure, we will assume that the hyperparameters are the same for each of the species-level random effects.
 
-Tron <- readRDS('~/Downloads/regionGeometry.RDS')
-dt <- readRDS('~/Downloads/processedDataForPhil.RDS')
+```{r startWorkflow}
 
-```
-
-```{r Create mesh and SPDE}
-
-#Tron <- st_transform(Tron,'+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-
-#mesh <- INLA::inla.mesh.2d(boundary = inlabru::fm_as_segm(Tron),
-#                           loc = st_as_sfc(dt),
-#                           cutoff = 9000, max.edge=c(8000, 12000), offset= 800,
-#                           crs = inlabru::fm_crs('+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'))
-#ggplot() + geom_sf(data = Tron) + gg(mesh)
-
-mesh <- INLA::inla.mesh.2d(boundary = inlabru::fm_as_segm(Tron),
-                           loc = st_as_sfc(dt),
-                           cutoff = 11000, max.edge=c(39000, 46000), offset= 80000,
-                           crs = inlabru::fm_crs('+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'))
-
-spatMod <- inla.spde2.matern(mesh = mesh)
+Rich <- startWorkflow(Species = c("Lolium perenne L.","Rubus caesius L.",
+                                  "Rosa spinosissima L.",
+                                  "Poa trivialis L.",
+                                  "Galium verum L.",
+                                  "Tanacetum vulgare L.",
+                                  "Viola tricolor L.",
+                                  "Epilobium L."),
+        Projection =  '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=km +no_defs',
+                      Save = FALSE, Richness = TRUE,
+                      saveOptions = list(projectName = 'Richness'))
 
 ```
 
-```{r Find unique locations}
+Next, we need to obtain a boundary object of the Netherlands and simplify it to assist with the estimation.
 
-#dt <- st_transform(dt, mesh$crs) 
+```{r addArea}
 
-dt$simpleScientificName <- as.numeric(as.factor(dt$simpleScientificName))
-
-uniqueLocations <- c(st_equals(dt))[!duplicated(lapply( c(st_equals(dt)), sort))]
-
-dt$samplingSite <- NA
-
-for (i in 1:length(uniqueLocations)) dt[unlist(uniqueLocations[[i]]), 'samplingSite'] <- i
+Ned <- giscoR::gisco_get_countries(country = 'Netherlands', resolution = 60)
+Ned <- st_cast(st_as_sf(Ned), 'POLYGON')
+Ned <- Ned[which.max(st_area(Ned)),]
+Ned <- rmapshaper::ms_simplify(Ned, keep = 0.5)
+Rich$addArea(Ned)
 
 ```
 
+We add the data in directly from *GBIF* using the `.$addGBIF` function. There are no recorded absences for the *Dutch vegetation database* for our selected species. Therefore we generate absences using `generateAbsences = TRUE`, which will pool all the observations for all species within the dataset together, and generate absences where that species was not found.
 
-```{r Split data up}
+```{r addGBIF}
 
-PO <- dt[dt$dataType == 'PO',]
-PA <- dt[dt$dataType != 'PO',]
+Rich$addGBIF(datasetName = 'DVD', 
+             datasetKey = '740df67d-5663-41a2-9d12-33ec33876c47', 
+             datasetType = 'PA', generateAbsences = TRUE)
 
-```
-
-```{r Create Likelihoods}
-
-PALike <- like(formula = individualCount ~ .,
-               data = PA,
-               family = 'Binomial',
-               include = c('PAintercept', 'PASpde'), 
-               control.family = list(link = 'cloglog'))
-
-POLike <- like(formula = geometry ~ .,
-               data = PO,
-               family = 'cp',
-               include = c('POintercept', 'POSpde'),
-               ips = fm_int(domain = mesh, samplers = Tron))
-
-MultinomLike <- like(formula = individualCount ~ .,
-                     data = dt,
-                     include = c('MultinomIntercept', 'speciesIndex', 'siteIndex'),
-                     family = 'Poisson')
+Rich$addGBIF(datasetName = 'iNat', 
+             datasetKey = '50c9509d-22c7-4a22-a47d-8c48425ef4a7')
 
 ```
 
-```{r Define Components}
+To estimate the spatial effect, we need to create a triangulated mesh. We create a fine mesh, however you may speed up the analysis by making the mesh coarser.
 
-Components <- ~ - 1 + PAintercept(1) + POintercept(1) + MultinomIntercept(1) +
-                POSpde(main = geometry, model = spatMod) + 
-                PASpde(main = geometry, copy = 'POSpde', hyper = list(beta = list(fixed = FALSE))) +
-                #speciesIndex(simpleScientificName, model = 'iid',   
-                #             hyper = list(prec = list(initial = -log(0.001),
-                #                                      fixed = TRUE))) +
-                siteIndex(main = geometry, model = spatMod, group = simpleScientificName, ngroup = 37)
-                #siteIndex(samplingSite, model = 'iid', constr = TRUE)
+```{r Mesh}
+
+Rich$addMesh(max.edge = c(5, 10))
+Rich$plot(Mesh = TRUE)
 
 ```
 
-```{r Run Model}
+We furthermore specify a second spatial effect for the unstructured data to account for the bias sampling. In addition, we specify penalizing *complexity* priors for all of the random effects (species-level random effect, bias random effect and the precision parameter of the *iid* intercept term) to reduce overfitting of the model.
 
-MultinomModel <- bru(Components, POLike, PALike, MultinomLike)
+```{r priors}
+
+Rich$specifySpatial(prior.range = c(0.2,0.1),
+                    prior.sigma = c(2, 0.1))
+
+Rich$biasFields('iNat', prior.range = c(0.1, 0.1),
+                prior.sigma = c(0.2, 0.1))
+
+Rich$specifyPriors(priorIntercept = list(prior = 'pc.prec', param = c(0.02, 0.01)))
 
 ```
 
-```{r Predict Model}
+We assume one covariate in the model (average temperature) which we download using `.$addCovariates`. We then use the function `.$modelFormula` to specify the formula of the process model, which in this case includes both the linear and quadratic effect of the covariate.
 
-Dat <- fm_cprod(fm_pixels(mesh = mesh, mask = st_transform(Tron, mesh$crs)), 
-                data.frame(simpleScientificName = 1:max(dt$simpleScientificName)))
+```{r modelFormula}
 
-Preds <- predict(MultinomModel, newdata = Dat, formula =  ~ (siteIndex + speciesIndex))
+Rich$addCovariates(worldClim = c('tavg'), res = 10, Function = scale)
+Rich$modelFormula(covariateFormula = ~ tavg + I(tavg^2))
 
-ggplot() + gg(Preds %>% group_by(geometry) %>% summarise(su = sum(mean)), aes(col = su))
-#ggplot(Preds) + gg(Preds, aes(col = mean)) + facet_wrap(~simpleScientificName)
+```
+
+Estimating richness requires selecting one of the intercepts in the model for which to scale the intensity function. This dataset needs to be one where the sampling bias is assumed to be minimal, and the sampling area for each sampling location is known and available.
+
+Specifying the intercept used to scale the intenstiy function may be done using *predictionIntercept* in the `Richness` options. We may then specify the sampling size of the sampling locations using *samplingSize*, however given that these values are not constant for our dataset, we include it as an offset using the *Offset* argument in the *ISDM* options.
+
+```{r specRich}
+
+Rich$modelOptions(ISDM = list(Offset = 'sampleSizeValue'), 
+                  Richness = list(predictionIntercept = 'DVD'))
+
+```
+
+Finally, we select our output as richness maps, and estimate the model.
+
+```{r workflow}
+
+Rich$workflowOutput('Maps')
+
+RichModel <- sdmWorkflow(Rich, inlaOptions = list(verbose = TRUE))
+
+```
+
+And provide maps of the predictions along with estimated measures of uncertainty.
+
+```{r Rich}
+
+ggplot() + gg(RichModel$Richness$Richness, aes(col = q0.025))
+ggplot() + gg(RichModel$Richness$Richness, aes(col = q0.5))
+ggplot() + gg(RichModel$Richness$Richness, aes(col = q0.975))
+
+```
+
+The species-level probabilities of occurrence are also found within this return object. We may thus plot how these vary across space for each species. For example, we may plot the probabilities for *Galium verumL*. and *Tanacetum vulgare L.*
+
+```{r prob}
+
+ggplot() + gg(RichModel$Richness$Probabilities$Galium_verum_L., aes(col = mean)) 
+ggplot() + gg(RichModel$Richness$Probabilities$Tanacetum_vulgare_L., aes(col = mean)) 
+
+
 ```

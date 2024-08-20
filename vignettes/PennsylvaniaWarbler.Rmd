@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
   message = FALSE)
 ```
 
-This vignette illustrates using the *intSDM* R package for three types of warbler distributed across Pennsylvania on the Eastern side of the United States of America. This case study has been used in numerous other integrated species distribution model analyses and includes three datasets: *eBird*, *North American Breeding Bird Survey* (*BBS*) and *Pennsylvania Breeding Bird Atlas* (*BBA*). Details on the data and the selection of observation models for each are provided in @PointedSDMs, @isaac2020data and @miller2019recent.
+This vignette illustrates using the *intSDM* R package for three types of warbler distributed across Pennsylvania on the Eastern side of the United States of America. This case study has been used in numerous other integrated species distribution model analyses (for example, @PointedSDMs, @isaac2020data and @miller2019recent) and includes three datasets: *eBird*, *North American Breeding Bird Survey* (*BBS*) and *Pennsylvania Breeding Bird Atlas* (*BBA*). Details on the data and the selection of observation models for each are provided within the references.
 
 ```{r setup}
 
@@ -44,9 +44,10 @@ We will then initialize the workflow using the `startWorkflow` function.
 
 ```{r startWorkflow}
 
-workflow <- startWorkflow(Richness = TRUE,
+workflow <- startWorkflow(Richness = FALSE,
   Projection = "+proj=utm +zone=17 +datum=WGS84 +units=km",
-  Species = c("Setophaga_caerulescens", "Setophaga_fusca", "Setophaga_magnolia"),
+  Species = c("Setophaga_caerulescens"), 
+              #"Setophaga_fusca", "Setophaga_magnolia"),
   saveOptions = list(projectName =  'Setophaga'), Save = FALSE
 )
 
@@ -60,26 +61,29 @@ workflow$addArea(Object = USAboundaries::us_states(states = "Pennsylvania"))
 
 ```
 
-Next we add data to the analysis. The *eBird* dataset is available to download directly from *GBIF*, and thus may be downloaded into out workflow using the `.$addGBIF` function and specifying the relevant *datasetKey*. The other two datasets are not directly available on *GBIF*, but may still be added using the `.$addStructured` function. This requires us to specify the response name of each dataset (using the *responseName* argument), and the species name variable (using the *speciesName* argument).
+Next we add data to the analysis. The *eBird* dataset is available to download directly from *GBIF*, and thus may be downloaded into out workflow using the `.$addGBIF` function and specifying the relevant *datasetKey*. We limit our search to only 5000 species observations (per species) using the `limit` argument, however more species may be added if you wanted. In addition, we only include observations between 2005 and 2009, given that these are the time periods that the other datasets include.
+
+The other two datasets are not directly available on *GBIF*, but may still be added using the `.$addStructured` function. This requires us to specify the response name of each dataset (using the *responseName* argument), and the species name variable (using the *speciesName* argument).
 
 ```{r download Data}
 
 workflow$addGBIF(datasetName = 'eBird', datasetType = 'PO', limit = 5000,
-                 datasetKey = '4fa7b334-ce0d-4e88-aaae-2e0c138d049e')
-
-workflow$addStructured(dataStructured = BBA, datasetType = 'PA',
-                       responseName = 'NPres', 
-                       speciesName = 'Species_name')
+                 datasetKey = '4fa7b334-ce0d-4e88-aaae-2e0c138d049e',
+                 year = '2005,2009')
 
 workflow$addStructured(dataStructured = BBS, datasetType = 'Counts',
                        responseName = 'Counts', 
+                       speciesName = 'Species_name')
+
+workflow$addStructured(dataStructured = BBA, datasetType = 'PA',
+                       responseName = 'NPres', 
                        speciesName = 'Species_name')
 
 workflow$plot(Species = TRUE)
 
 ```
 
-We can then add the *elevation* and *canopy* covariates from the *PointedSDMs* package. If we were planning on using *worldClim* covariates, we could have used the *worldClim* argument by specifying which variable we wanted to download.
+We can then add the *elevation* and *canopy* covariates from the *PointedSDMs* package. These covariates have already been scaled. If we were planning on using *worldClim* covariates, we could have used the *worldClim* argument by specifying which variable we wanted to download.
 
 ```{r addCovariates}
 
@@ -93,37 +97,79 @@ workflow$plot(Covariates = TRUE)
 
 ```
 
-We specify an additional field for the *eBird* dataset using the `.$biasFields` argument, and an *inla.mesh* object using `.$addMesh`.
+We add an *inla.mesh* object using `.$addMesh`.
 
 ```{r biasFields}
 
 workflow$addMesh(cutoff = 0.2 * 5,
-                 max.edge = c(0.1, 0.24) * 40,
+                 max.edge = c(0.1, 0.24) * 120,
                  offset = c(0.1, 0.4) * 100)
 
-workflow$biasFields(datasetName  = 'eBird')
+workflow$plot(Mesh = TRUE)
 
 ```
 
-For this case study, we specify the model outcome as *Model*. This will give us the *R-INLA* model outcome for which we could analyse further.
+And add a second spatial effect for the *eBird* data, and specify priors.
+
+```{r speciyRandom}
+
+##Use a correlative structure to share information across the datasets if the standard model does not produce results that we want
+
+workflow$specifySpatial(prior.range = c(15, 0.1),
+                        prior.sigma = c(1, 0.1))
+
+workflow$biasFields(datasetName = 'eBird',
+                    prior.range = c(15, 0.1),
+                    prior.sigma = c(1, 0.1))
+
+workflow$specifyPriors(effectNames = 'Intercept', 
+                       Mean = 0, 
+                       Precision = 1)
+
+```
+
+For this case study, we specify the model outcome as *Model* and *cross-validation*. This will give us: an *R-INLA* model outcome for which we could analyse further, and estimates of cross-validation.
+
+The cross-validation we use is spatial-blocking, which will segment our study area into *k* folds. Here we use the *Predict* method, which will iteratively fit a training model for all combinations of dataset in all blocks except for one. The linear predictor of the training model is then calculated at the values of the test data (which is the first non-present-only dataset added into the model) in the left out block. A new testing model is then fit using the testing data is fit, using the predicted linear predictor as an offset in the model. The log marginal likelihood is then calculated from the testing model, and the model with the lowest log marginal likelihood across blocks is deemed best.
 
 ```{r outcomes}
 
-workflow$workflowOutput('Richness')
+workflow$workflowOutput(c('Model', 'Cross-validation'))
 
-workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'eb',
-                                                    diagonal = 100,
-                                                    cmin = 0),
-                                  safe = TRUE,
-                                  inla.mode = 'experimental'),
-                      Richness = list(predictionIntercept = 'BBA'))
+workflow$crossValidation(Method = 'spatialBlock',  
+                         blockOptions = list(k = 4, 
+                                             rows_cols = c(20, 20), 
+                                             plot = TRUE, seed = 123),
+                         blockCVType = "Predict")
 
 ```
 
+We may then estimate the model using `sdmWorkflow`, and print a summary of the models. Note that the cross-validation may take a long time to estimate, given that the model fits each combination of possible datasets, *k* times.
+
 ```{r sdmWorkflow}
 
-Models <- sdmWorkflow(Workflow = workflow)
+Model <- sdmWorkflow(Workflow = workflow, 
+                      inlaOptions = list(control.inla=list(int.strategy = 'eb',
+                                                    diagonal = 0.1,
+                                                    cmin = 0),
+                                  safe = TRUE,
+                                  verbose = TRUE,
+                                  inla.mode = 'experimental'))
 
-lapply(unlist(Models, recursive = FALSE), summary)
+```
+
+The summary of the model is given as:
+
+```{r plot int}
+
+Model[[1]]$Model
+
+```
+
+And a summary of the cross-validation is given as:
+
+```{r plot bias}
+
+Model[[1]]$spatialBlock
 
 ```
