@@ -871,7 +871,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
         paStructured <- any(unlist(lapply(unlist(private$dataStructured, recursive = FALSE), function(x) {
 
-          workflow$.__enclos_env__$private$responsePA %in% names(x)
+          private$responsePA %in% names(x)
 
         })))
 
@@ -948,8 +948,6 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 #'                           Save = FALSE,
 #'                           saveOptions = list(projectName = 'example'))
 #'
-#' workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'eb')),
-#'                       ISDM = list(pointsIntercept = FALSE))
   modelOptions = function(ISDM = list(),
                           Richness = list()) {
 
@@ -1188,10 +1186,10 @@ obtainMeta = function(Number = TRUE,
 
     cat(paste0(species, ':'),'\n')
 
-    if (length(private$dataGBIF) > 0) speciesNumGBIF <- unlist(lapply(workflow$.__enclos_env__$private$dataGBIF[[species]], nrow))
+    if (length(private$dataGBIF) > 0) speciesNumGBIF <- unlist(lapply(private$dataGBIF[[species]], nrow))
     else speciesNumGBIF <- NULL
 
-    if (length(private$dataStructured) > 0) speciesNumStructured <- unlist(lapply(workflow$.__enclos_env__$private$dataGBIF[[species]], nrow))
+    if (length(private$dataStructured) > 0) speciesNumStructured <- unlist(lapply(private$dataGBIF[[species]], nrow))
     else speciesNumStructured <- NULL
 
     speciesNum <- c(speciesNumGBIF, speciesNumStructured)
