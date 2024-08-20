@@ -157,8 +157,6 @@ workflow <- startWorkflow(Species = 'Fraxinus excelsior',
                           Save = FALSE,
                           saveOptions = list(projectName = 'example'))
 
-workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'eb')),
-                      ISDM = list(pointsIntercept = FALSE))
 
 ## ------------------------------------------------
 ## Method `species_model$specifySpatial`
@@ -717,7 +715,7 @@ Function to add a spatial cross validation method to the workflow.
 
 \item{\code{blockOptions}}{A list of options to specify the spatial block cross-validation. Must be a named list with arguments specified for: \code{k}, \code{rows_cols}, \code{plot}, \code{seed}. See \code{blockCV::cv_spatial} for more information.}
 
-\item{\code{blockCVType}}{The cross-validation method to complete if \code{Method = 'spatialBlock'}. May be one of \code{'DIC'} (default) which will iteratively return the DIC scores for each block, or \code{'Predict'}. This method return scores of marginal likelihood for each combination of dataset across all blocks, by fitting a model on all blocks but one, and predicting on the left out block. The prediction dataset is automatically chosen as the first PA dataset added to the model. Note that this may take a long time to estimate if there are many datasets included in the model.}
+\item{\code{blockCVType}}{The cross-validation method to complete if \code{Method = 'spatialBlock'}. May be one of \code{'DIC'} (default) which will iteratively return the DIC scores for each block, or \code{'Predict'}. This method return scores of marginal likelihood for each combination of dataset across all blocks, by fitting a model on all blocks but one, and predicting on the left out block. The prediction dataset is automatically chosen as the first PA dataset added to the model. See \link[PointedSDMs]{blockedCV} for more information. Note that this may take a long time to estimate if there are many datasets included in the model.}
 }
 \if{html}{\out{</div>}}
 }
@@ -762,8 +760,6 @@ Function to specify model options for the \code{INLA} and \code{PointedSDMs} par
                           Save = FALSE,
                           saveOptions = list(projectName = 'example'))
 
-workflow$modelOptions(INLA = list(control.inla=list(int.strategy = 'eb')),
-                      ISDM = list(pointsIntercept = FALSE))
 }
 \if{html}{\out{</div>}}
 
