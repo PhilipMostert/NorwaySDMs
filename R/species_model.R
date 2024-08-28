@@ -35,7 +35,12 @@ initialize = function(Countries, Species, nameProject, Save,
   private$richnessEstimate <- Richness
 
   if (!Richness) private$optionsInla[['pointsSpatial']] <- 'copy'
-  else private$optionsInla[['pointsSpatial']] <- NULL
+  else {
+
+    private$optionsInla[['pointsSpatial']] <- NULL
+    private$optionsRichness[['speciesSpatial']] <- 'replicate'
+
+  }
 
   if (!missing(Countries)) {
 
@@ -974,7 +979,7 @@ addGBIF = function(Species = 'All', datasetName = NULL,
 
     if ('samplingSize' %in% names(Richness)) private$samplingSize <- Richness[['samplingSize']]
 
-    if (!'speciesSpatial' %in% names(Richness)) Richness[['speciesSpatial']] <- 'shared'
+    if (!'speciesSpatial' %in% names(Richness)) Richness[['speciesSpatial']] <- 'replicate'
     else
       if (!Richness[['speciesSpatial']] %in% c('shared', 'replicate', 'copy') && !is.null(Richness[['speciesSpatial']])) stop ('speciesSpatial must be either: NULL, "replicate", "copy" or "shared.')
 
