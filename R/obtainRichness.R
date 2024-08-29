@@ -6,6 +6,7 @@
 #' @param sampleSize The size of the sampling area for the prediction intercept dataset. Defaults to \code{1}.
 #' @param inclProb Include the individual probabilities for each species. Defaults to \code{TRUE}
 #' @import PointedSDMs
+#' @export
 #'
 #' @return An \code{sf} data.frame object of richness at each sampling location.
 #'
