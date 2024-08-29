@@ -548,99 +548,19 @@ else {
 
         }
 
-      if (any(c('Predictions', 'Maps') %in% Oputs) && !inherits(richModel, 'try-error')) {
-
       if (is.null(predictionData)) {
 
         .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'sf')
         predictionData <- inlabru::fm_pixels(mesh = .__mesh.__,
                                              mask = .__mask.__,
                                              dims = predictionDim)
-
-
       }
 
-      if (is.null(.__spatModel.__)) .__predSpat.__ <- NULL
-      else .__predSpat.__ <- '+speciesShared'
-      #If copy then add here too
+      if (any(c('Predictions', 'Maps') %in% Oputs) && !inherits(richModel, 'try-error')) {
 
-      if (is.null(Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial)) .__pointSpat.__ <- NULL
-      else
-        if (Workflow$.__enclos_env__$private$optionsISDM$pointsSpatial == 'shared') .__pointSpat.__ <- '+shared_spatial'
-      else .__pointSpat.__ <- paste0('+',Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']], '_spatial')
-
-      if (!is.null(Workflow$.__enclos_env__$private$samplingSize)) predictionData$sampSize <- Workflow$.__enclos_env__$private$samplingSize
-      else predictionData$sampSize <- 1
-
-      .__species.__ <- sort(unique(unlist(richModel[['species']][['speciesIn']])))
-
-      .__covs.__ <- richModel[['spatCovs']][['name']]
-
-      if (!is.null(Workflow$.__enclos_env__$private$biasCovNames)) .__covs.__ <- .__covs.__[!.__covs.__ %in%  names(Workflow$.__enclos_env__$private$biasCovariates)]
-
-      .__speciesEffects.__ <- list()
-
-      for (indexSp in 1:length(.__species.__)) {
-
-        if (paste0(.__species.__[indexSp], '_Fixed__Effects__Comps') %in% names(richModel$summary.random)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp], '_Fixed__Effects__Comps'))
-        else {
-
-          if (!is.null(.__covs.__)) .__covsSP.__ <- paste('+', paste0(.__species.__[indexSp],'_',.__covs.__, collapse = '+'))
-          else .__covsSP.__ <- NULL
-
-        }
-
-        if (!is.null(Workflow$.__enclos_env__$private$speciesIntercept)) {
-
-          if (Workflow$.__enclos_env__$private$speciesIntercept) .__specIntercept.__ <- paste0('+',Workflow$.__enclos_env__$private$speciesName,'_intercepts')
-          else .__specIntercept.__ <- paste0('+',.__species.__[indexSp], '_intercept')
-
-        } else .__specIntercept.__ <- NULL
-
-        .__speciesEffects.__[[indexSp]] <- paste(.__species.__[indexSp], '= INLA::inla.link.cloglog(log(sampSize) +',  .__predIntercept.__, .__covsSP.__, .__specIntercept.__, .__pointSpat.__,.__predSpat.__,', inverse = TRUE)')
-
-      }
-
-      .__speciesFormulas.__ <- paste(do.call(paste0, list(.__speciesEffects.__, sep = ';')), collapse = '')
-
-      .__speciesEval.__ <- paste('Richness = list(', paste(.__species.__,'=',.__species.__, collapse = ' , '),')')
-
-      .__thin.__ <- paste0(paste(paste0(.__species.__, '[!1:length(',.__species.__,') %in% seq(', 1:length(.__species.__),',length(',.__species.__,'),', length(.__species.__), ')] <- FALSE'), collapse=';'),';')
-
-
-      predictionFormula <- paste('{',
-                                 .__speciesFormulas.__,
-                                 .__thin.__,
-                                 .__speciesEval.__ ,'}')
-
-      if (!inherits(richModel, 'try-error')) {
-
-      message('Creating richness maps:', '\n\n')
-
-      richPredicts <- PointedSDMs:::predict.bruSDM(richModel, predictionData, #predictionDataSP?
-                                                   formula = parse(text = predictionFormula))
-
-      speciesProb <- mapply(function(x, seq) {
-
-        if (!is.null(x[[Workflow$.__enclos_env__$private$speciesName]])) prob <- x[x[[Workflow$.__enclos_env__$private$speciesName]] == seq,]
-        else prob <- x[x[['speciesSpatialGroup']] == seq,]
-        prob <- prob[, c('mean', 'sd', 'q0.025', 'q0.5', 'q0.975', 'median',
-                         Workflow$.__enclos_env__$private$speciesName)]
-        list(prob)
-
-      }, richPredicts[[1]], seq = 1:length(richPredicts[[1]]))
-
-      predictionData$mean <- Reduce(`+`, lapply(speciesProb, function(x) x$mean))
-      predictionData$q0.025 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.025))
-      predictionData$q0.5 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.5))
-      predictionData$q0.975 <- Reduce(`+`, lapply(speciesProb, function(x) x$q0.975))
-
-      ##Filter predData + speciesProbs
-       #For the richness we need mean, median and quantiles
-       #For the prediction data we need stats + species ID and name
-      predictionData <- predictionData[, c('mean', 'q0.025', 'q0.5', 'q0.975')]
-
-      richOutput <- list(Richness = predictionData, Probabilities = speciesProb)
+        richOutput <- obtainRichness(modelObject = richModel, predictionData = predictionData,
+                                     predictionIntercept = Workflow$.__enclos_env__$private$optionsRichness[['predictionIntercept']],
+                                     sampleSize = Workflow$.__enclos_env__$private$samplingSize)
 
       if (saveObjects) {
 
@@ -651,7 +571,7 @@ else {
 
       }
 
-      }
+      #}
 
       if ('Summary' %in% Oputs) {
 
