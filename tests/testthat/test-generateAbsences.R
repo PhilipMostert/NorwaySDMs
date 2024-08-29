@@ -5,11 +5,27 @@ testthat::test_that('generateAbsences correctly creates absences for the data.',
 
   proj <- '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
   species <- c('Fraxinus excelsior', 'Ulmus glabra', 'Arnica montana')
-  workflow <- startWorkflow(Species = species,
+  workflow <- try(startWorkflow(Species = species,
                             saveOptions = list(projectName = 'testthatexample'),
                             Projection = proj,
                             Countries = c('Sweden', 'Norway'),
-                            Quiet = TRUE, Save = FALSE)
+                            Quiet = TRUE, Save = FALSE))
+
+  if (inherits(workflow, 'try-error')) {
+
+
+    workflow <- startWorkflow(Species = species,
+                  saveOptions = list(projectName = 'testthatexample'),
+                  Projection = proj,
+                  Quiet = TRUE, Save = FALSE)
+
+    countries <- st_as_sf(geodata::world(path = tempdir()))
+    countries <- countries[countries$NAME_0 %in% c('Norway', 'Sweden'),]
+    countries <- st_transform(countries, proj)
+
+    workflow$addArea(Object = countries)
+
+  }
 
 
   if (is.null(workflow$.__enclos_env__$private$Area)) {
@@ -50,12 +66,28 @@ testthat::test_that('generateAbsences correctly creates absences for the data.',
   ##Test Richness = TRUE
   proj <- '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
   species <- c('Fraxinus excelsior', 'Ulmus glabra', 'Arnica montana')
-  workflow <- startWorkflow(Species = species,
-                            saveOptions = list(projectName = 'testthatexample'),
-                            Projection = proj,
-                            Richness = TRUE,
-                            Countries = c('Sweden', 'Norway'),
-                            Quiet = TRUE, Save = FALSE)
+  workflow <- try(startWorkflow(Species = species,
+                                saveOptions = list(projectName = 'testthatexample'),
+                                Projection = proj, Richness = TRUE,
+                                Countries = c('Sweden', 'Norway'),
+                                Quiet = TRUE, Save = FALSE))
+
+  if (inherits(workflow, 'try-error')) {
+
+
+    workflow <- startWorkflow(Species = species,
+                              saveOptions = list(projectName = 'testthatexample'),
+                              Projection = proj, Richness = TRUE,
+                              Quiet = TRUE, Save = FALSE)
+
+    countries <- st_as_sf(geodata::world(path = tempdir()))
+    countries <- countries[countries$NAME_0 %in% c('Norway', 'Sweden'),]
+    countries <- st_transform(countries, proj)
+
+    workflow$addArea(Object = countries)
+
+  }
+
 
 
   if (is.null(workflow$.__enclos_env__$private$Area)) {

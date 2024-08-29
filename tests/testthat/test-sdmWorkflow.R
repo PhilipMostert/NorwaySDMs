@@ -105,7 +105,7 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
 
     workflow <- startWorkflow(Species = species,
                               saveOptions = list(projectName = 'testthatexample', projectDirectory = './'),
-                              Projection = proj, Quiet = TRUE, Save = TRUE)
+                              Projection = proj, Quiet = TRUE, Save = TRUE, Richness = TRUE)
 
 
     workflow$addArea(Object = countries)
@@ -132,7 +132,7 @@ testthat::test_that('sdmWorkflow produces the correct output given different Wor
   RichModel <- readRDS(file = './testthatexample/richnessModel.rds')
   expect_setequal(rownames(RichModel$summary.fixed), c("GBIF_data_intercept", "GBIF_data2_intercept"))
   expect_equal(deparse1(RichModel$componentsJoint),
-               "~-1 + shared_spatial(main = geometry, model = shared_field) + speciesShared(main = geometry, model = speciesField) + GBIF_data_intercept(1) + GBIF_data2_intercept(1) + speciesName_intercepts(main = speciesName, model = \"iid\", constr = TRUE, hyper = list(prec = list(prior = \"loggamma\", param = c(1, 5e-05))))")
+               "~-1 + shared_spatial(main = geometry, model = shared_field) + speciesShared(main = geometry, model = speciesField, group = speciesSpatialGroup, control.group = list(model = \"iid\", hyper = list(prec = list(prior = \"loggamma\", param = c(1, 5e-05))))) + GBIF_data_intercept(1) + GBIF_data2_intercept(1) + speciesName_intercepts(main = speciesName, model = \"iid\", constr = TRUE, hyper = list(prec = list(prior = \"loggamma\", param = c(1, 5e-05))))")
   rm(RichModel)
   unlink('./testthatexample', recursive = TRUE)
 
