@@ -85,7 +85,6 @@ workflow$addStructured(dataStructured = speciesData, datasetType = 'PA',
 ## Method `species_model$addMesh`
 ## ------------------------------------------------
 
-if (requireNamespace('INLA')) {
 \dontrun{
 workflow <- startWorkflow(Species = 'Fraxinus excelsior',
                           Projection = '+proj=longlat +ellps=WGS84',
@@ -98,7 +97,6 @@ workflow$addMesh(cutoff = 20000,
                  max.edge=c(60000, 80000),
                  offset= 100000)
 
-}
 }
 
 ## ------------------------------------------------
@@ -550,7 +548,7 @@ workflow$addStructured(dataStructured = speciesData, datasetType = 'PA',
 \if{html}{\out{<a id="method-species_model-addMesh"></a>}}
 \if{latex}{\out{\hypertarget{method-species_model-addMesh}{}}}
 \subsection{Method \code{addMesh()}}{
-Function to add an \code{inla.mesh} object to the workflow. The user may either add their own mesh to the workflow, or use the arguments of this function to help create one.
+Function to add an \code{fm_mesh_2d} object to the workflow. The user may either add their own mesh to the workflow, or use the arguments of this function to help create one.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{species_model$addMesh(Object, ...)}\if{html}{\out{</div>}}
 }
@@ -558,16 +556,15 @@ Function to add an \code{inla.mesh} object to the workflow. The user may either 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{Object}}{An \code{inla.mesh} object to add to the workflow.}
+\item{\code{Object}}{An \code{fm_mesh_2d} object to add to the workflow.}
 
-\item{\code{...}}{Additional arguments to pass to \code{INLA}'s \code{inla.mesh.2d}. Use \code{?inla.mesh.2d} to find out more about the different arguments.}
+\item{\code{...}}{Additional arguments to pass to \code{fmesher}'s \code{fm_mesh_2d_inla}. Use \code{?fm_mesh_2d_inla} to find out more about the different arguments.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{if (requireNamespace('INLA')) {
-\dontrun{
+\preformatted{\dontrun{
 workflow <- startWorkflow(Species = 'Fraxinus excelsior',
                           Projection = '+proj=longlat +ellps=WGS84',
                           Save = FALSE,
@@ -579,7 +576,6 @@ workflow$addMesh(cutoff = 20000,
                  max.edge=c(60000, 80000),
                  offset= 100000)
 
-}
 }
 }
 \if{html}{\out{</div>}}

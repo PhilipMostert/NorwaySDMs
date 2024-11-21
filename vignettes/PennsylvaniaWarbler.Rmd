@@ -97,7 +97,7 @@ workflow$plot(Covariates = TRUE)
 
 ```
 
-We add an *inla.mesh* object using `.$addMesh`.
+We add an *fm_mesh_2d* object using `.$addMesh`.
 
 ```{r biasFields}
 
