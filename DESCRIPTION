@@ -4,7 +4,7 @@ Description: Integration of disparate datasets is needed in order to make effici
    Data integration is a powerful modeling framework which allows us to combine these datasets together into a single model, yet retain the strengths of each individual dataset.
    We therefore introduce the package, 'intSDM': an R package designed to help ecologists develop a reproducible workflow of integrated species distribution models, using data both provided from the user as well as data obtained freely online.
    An introduction to data integration methods is discussed in Issac, Jarzyna, Keil, Dambly, Boersch-Supan, Browning, Freeman, Golding, Guillera-Arroita, Henrys, Jarvis, Lahoz-Monfort, Pagel, Pescott, Schmucki, Simmonds and O’Hara (2020) <doi:10.1016/j.tree.2019.08.006>.
-Version: 2.1.0
+Version: 2.1.0.9000
 Authors@R: 
     c(person(given = "Philip",
            family = "Mostert",
