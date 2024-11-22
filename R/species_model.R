@@ -556,11 +556,10 @@ if (nrow(strucData) > 0) {
   }
   ,
 
-#' @description Function to add an \code{inla.mesh} object to the workflow. The user may either add their own mesh to the workflow, or use the arguments of this function to help create one.
-#' @param Object An \code{inla.mesh} object to add to the workflow.
-#' @param ... Additional arguments to pass to \code{INLA}'s \code{inla.mesh.2d}. Use \code{?inla.mesh.2d} to find out more about the different arguments.
+#' @description Function to add an \code{fm_mesh_2d} object to the workflow. The user may either add their own mesh to the workflow, or use the arguments of this function to help create one.
+#' @param Object An \code{fm_mesh_2d} object to add to the workflow.
+#' @param ... Additional arguments to pass to \code{fmesher}'s \code{fm_mesh_2d_inla}. Use \code{?fm_mesh_2d_inla} to find out more about the different arguments.
 #' @examples
-#' if (requireNamespace('INLA')) {
 #' \dontrun{
 #' workflow <- startWorkflow(Species = 'Fraxinus excelsior',
 #'                           Projection = '+proj=longlat +ellps=WGS84',
@@ -574,36 +573,36 @@ if (nrow(strucData) > 0) {
 #'                  offset= 100000)
 #'
 #' }
-#' }
 
   addMesh = function(Object,
                      ...) {
 
     if (missing(Object) &&
-        is.null(private$Area)) stop ('Please provide an inla.mesh object or use the ... argument to specify a mesh.')
+        is.null(private$Area)) stop ('Please provide an fm_mesh_2d object or use the ... argument to specify a mesh.')
 
     if (missing(Object)) {
 
       meshArgs <- list(...)
-      if (length(meshArgs) == 0) stop('Please provide ... to specify the mesh construction. See ?inla.mesh.2d for more details.')
+      if (length(meshArgs) == 0) stop('Please provide ... to specify the mesh construction. See ?fm_mesh_2d_inla for more details.')
 
-      meshObj <- INLA::inla.mesh.2d(boundary = fmesher::fm_as_segm(private$Area[1]),
-                                    crs = inlabru::fm_crs(private$Projection),
-                                         ...
-                                          )
+      meshObj <- fmesher::fm_mesh_2d_inla(
+        boundary = fmesher::fm_as_segm(private$Area[1]),
+        crs = fmesher::fm_crs(private$Projection),
+        ...
+      )
 
       private$Mesh <- meshObj
 
     }
     else {
 
-      if (!inherits(Object, 'inla.mesh')) stop('Object provided is not an inla.mesh object.')
+      if (!inherits(Object, 'fm_mesh_2d')) stop('Object provided is not an fm_mesh_2d object.')
 #Ensure CRS is the same
       private$Mesh <- Object
 
     }
 
-    if (!private$Quiet) message('INLA mesh added successfully.')
+    if (!private$Quiet) message('Mesh added successfully.')
 
     }
   ,

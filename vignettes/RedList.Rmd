@@ -38,7 +38,7 @@ library(INLA)
 |-----------------------|------------------------------------------------------------------------------------------------------------|
 | `.$plot()`            | Plot data and other objects required for the model.                                                        |
 | `.$addStructured()`   | Add data not available on GBIF.                                                                            |
-| `.$addMesh()`         | Create an *inla.mesh* object.                                                                              |
+| `.$addMesh()`         | Create an *fm_mesh_2d* object.                                                                              |
 | `.$addGBIF()`         | Add data from GBIF.                                                                                        |
 | `.$addArea()`         | Specify sampling domain.                                                                                   |
 | `.$addCovariates()`   | Add spatial covariates.                                                                                    |
@@ -147,9 +147,9 @@ workflow$obtainMeta()
 
 ```
 
-### Creating an *inla.mesh* object
+### Creating an *fm_mesh_2d* object
 
-One of the objects required for our model is an *inla.mesh* object, which we will use in the approximation of our spatial random fields. The `.$addMesh()` function's argument *...* uses `INLA::inla.mesh.2d()` to create this object.
+One of the objects required for our model is an *fm_mesh_2d* object, which we will use in the approximation of our spatial random fields. The `.$addMesh()` function's argument *...* uses `fmesher::fm_mesh_2d_inla()` to create this object.
 
 ```{r INLA}
 

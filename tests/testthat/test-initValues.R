@@ -21,14 +21,14 @@ testthat::test_that('initValues can estimate a glm to obtain initial values', {
   st_geometry(PA) <- 'geometry'
   PA$PAresp <- sample(x = c(0,1), size = nrow(PA), replace = TRUE)
   PA$species <- sample(x = c('bird'), nrow(PA), replace = TRUE)
-  mesh <- INLA::inla.mesh.2d(boundary = INLA::inla.sp2segment(SpatialPoly),
-                             max.edge = 2, crs = inlabru::fm_crs(projection))
+  mesh <- fmesher::fm_mesh_2d_inla(boundary = fmesher::fm_as_segm(SpatialPoly),
+                             max.edge = 2, crs = fmesher::fm_crs(projection))
   #Random Counts dataset
   Counts <- st_as_sf(st_sample(SpatialPoly, 100, crs = projection))
   Counts$count <- rpois(n = nrow(Counts), lambda = 5)
   Counts$species <- sample(x = c('fish', 'bird'), nrow(Counts), replace = TRUE)
 
-  iPoints <- inlabru::fm_int(samplers = SpatialPoly, domain = mesh)
+  iPoints <- fmesher::fm_int(samplers = SpatialPoly, domain = mesh)
 
   coordnames <- c('long', 'lat')
   responseCounts <- 'count'

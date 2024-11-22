@@ -232,15 +232,15 @@ testthat::test_that('addMesh correctly adds the mesh to the model', {
 
   expect_error(workflow$addMesh())
 
-  meshObject <<- INLA::inla.mesh.2d(boundary = inlabru::fm_sp2segment(countries),
+  meshObject <<- fmesher::fm_mesh_2d_inla(boundary = fmesher::fm_as_segm(countries),
                              max.edge = 200000,
                              offset = 10)
 
   workflow$addMesh(Object = meshObject)
-  expect_equal(class(workflow$.__enclos_env__$private$Mesh), c('fm_mesh_2d','inla.mesh'))
+  expect_s3_class(workflow$.__enclos_env__$private$Mesh, 'fm_mesh_2d')
 
   workflow$addMesh(max.edge = 200000, cutoff = 3)
-  expect_equal(class(workflow$.__enclos_env__$private$Mesh), c('fm_mesh_2d','inla.mesh'))
+  expect_s3_class(workflow$.__enclos_env__$private$Mesh, 'fm_mesh_2d')
 
 })
 
