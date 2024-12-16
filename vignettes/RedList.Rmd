@@ -64,7 +64,6 @@ library(INLA)
 | `.$biasFields()`      | Specify an additional spatial effect for a dataset.                                                        |
 | `.$workflowOutput()`  | Specify the output of the workflow.                                                                        |
 | `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                |
->>>>>>> cf2988f08cf438f91df6ad2020c55bbd5ee9f384
 
 `sdmWorkflow()` implements the workflow based on the objects added in `startWorkflow()`. The output of this function is a list of objects specified in `.$workflowOutput()`.
 
