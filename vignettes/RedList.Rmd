@@ -34,20 +34,20 @@ library(INLA)
 
 *intSDM* has two main functions: `startWorkflow()` and `sdmWorkflow()`. The first of which is designed to setup and specify all the individual components of the workflow using different slot functions. The functions related to this object include:
 
-| Function name         | Function use                                                                                               |
-|-----------------------|------------------------------------------------------------------------------------------------------------|
-| `.$plot()`            | Plot data and other objects required for the model.                                                        |
-| `.$addStructured()`   | Add data not available on GBIF.                                                                            |
-| `.$addMesh()`         | Create an *inla.mesh* object.                                                                              |
-| `.$addGBIF()`         | Add data from GBIF.                                                                                        |
-| `.$addArea()`         | Specify sampling domain.                                                                                   |
-| `.$addCovariates()`   | Add spatial covariates.                                                                                    |
-| `.$crossValidation()` | Specify the cross-validation method.                                                                       |
-| `.$modelOptions()`    | Add *R-INLA [@martins2013bayesian], inlabru [@bachl2019inlabru]* and *PointedSDMs* [@PointedSDMs] options. |
-| `.$specifySpatial()`  | Add penalizing complexity priors to the spatial effects.                                                   |
-| `.$biasFields()`      | Specify an additional spatial effect for a dataset.                                                        |
-| `.$workflowOutput()`  | Specify the output of the workflow.                                                                        |
-| `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                |
+| Function name | Function use |
+|------------------|------------------------------------------------------|
+| `.$plot()` | Plot data and other objects required for the model. |
+| `.$addStructured()` | Add data not available on GBIF. |
+| `.$addMesh()` | Create an *inla.mesh* object. |
+| `.$addGBIF()` | Add data from GBIF. |
+| `.$addArea()` | Specify sampling domain. |
+| `.$addCovariates()` | Add spatial covariates. |
+| `.$crossValidation()` | Specify the cross-validation method. |
+| `.$modelOptions()` | Add *R-INLA [@martins2013bayesian], inlabru [@bachl2019inlabru]* and *PointedSDMs* [@PointedSDMs] options. |
+| `.$specifySpatial()` | Add penalizing complexity priors to the spatial effects. |
+| `.$biasFields()` | Specify an additional spatial effect for a dataset. |
+| `.$workflowOutput()` | Specify the output of the workflow. |
+| `.$obtainMeta()` | Obtain metadata for the occurrence records. |
 
 `sdmWorkflow()` implements the workflow based on the objects added in `startWorkflow()`. The output of this function is a list of objects specified in `.$workflowOutput()`.
 
@@ -59,8 +59,10 @@ The other arguments (*saveOptions* and *Save)* should be used if the user wants 
 
 ```{r initialize workflow}
 
+proj <- '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.9996 +datum=WGS84 +units=km +x_0=500 +y_0=0 +no_defs'
+
 workflow <- startWorkflow(
-        Projection = '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=km +no_defs',
+        Projection = proj,
         Species = c("Fraxinus_excelsior", "Ulmus_glabra", "Arnica_montana"),
         saveOptions = list(projectName =  'Vascular'), Save = FALSE
         )
@@ -75,19 +77,16 @@ We then use `.$plot()` to see what the boundary looks like.
 
 ```{r addArea}
 
-yes <- FALSE
-if (yes) {
-Norway <- giscoR::gisco_get_countries(country = 'Norway', resolution = 60)
+Norway <- fm_transform(giscoR::gisco_get_countries(country = 'Norway', resolution = 60),
+                       proj)
 Norway <- st_cast(st_as_sf(Norway), 'POLYGON')
 Norway <- Norway[which.max(st_area(Norway)),]
 Norway <- rmapshaper::ms_simplify(Norway, keep = 0.8)
+Norway <- st_as_sf(fm_extensions(Norway, convex = c(10, 20))[[1]])
 
 workflow$addArea(Object = Norway)
 workflow$plot()
-}
 
-Norway <- readRDS('IntegratedLakefish/Norway.rds')
-workflow$addArea(Object = Norway)
 ```
 
 ### Adding occurrence data
@@ -132,7 +131,7 @@ Covariate data may be added to the model using `.$addCovariates()`. Layers from 
 
 ```{r addCovariates, eval = FALSE}
 
-workflow$addCovariates(worldClim = 'tavg', res = 5, Function = scale)
+workflow$addCovariates(worldClim = 'tavg', res = 2.5, Function = scale)
 workflow$plot(Covariates = TRUE)
 
 ```
@@ -154,8 +153,8 @@ One of the objects required for our model is an *inla.mesh* object, which we wil
 ```{r INLA}
 
 workflow$addMesh(cutoff = 20 * 0.25,
-                 max.edge = c(60, 80)*0.5, #0.25
-                 offset= c(30, 40))
+                 max.edge = c(60, 180)*0.5, #0.25
+                 offset= c(30, 200))
 
 workflow$plot(Mesh = TRUE)
 
@@ -169,18 +168,18 @@ Furthermore we also used *penalizing complexity* (PC) priors in our model, which
 
 workflow$specifySpatial(prior.range = c(100, 0.1),
                         prior.sigma = c(1, 0.1),
-                        constr = FALSE)
+                        constr = TRUE)
 
 ```
 
-We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 1).
+We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 5).
 
 ```{r Fixed priors}
 
 workflow$specifyPriors(effectNames = 'Intercept',
-                       Mean = 0, Precision = 1)
+                       Mean = 0, Precision = 5)
 
-workflow$specifyPriors('tavg', Mean = 0, Precision = 1)
+workflow$specifyPriors('tavg', Mean = 0, Precision = 5)
 
 ```
 
@@ -191,8 +190,8 @@ We specify an additional spatial effect for the citizen science data using `.$bi
 ```{r Bias}
 
 workflow$biasFields('CZ', 
-                    prior.range = c(100, 0.1), #1 #0.1
-                    prior.sigma = c(1, 0.1), #1 #0.1
+                    prior.range = c(1, 0.1), #1 #0.1
+                    prior.sigma = c(0.1, 0.1), #1 #0.1
                     constr = FALSE)
 
 ```
@@ -216,10 +215,13 @@ Due to the lengthy time it requires to produce this map, inference is not made i
 
 ```{r Maps}
 
-Maps <- sdmWorkflow(workflow,inlaOptions = list(control.inla=list(int.strategy = 'ccd',
+Maps <- sdmWorkflow(workflow,inlaOptions = list(num.threads = 1,
+                                                control.inla=list(int.strategy = 'ccd',
                                                     strategy = 'gaussian',
+                                                    #tolerance = 5e-10,
+                                                    #h = 5e-8,
                                                     cmin = 0,
-                                                    diagonal = 0.1,
+                                                    #diagonal = 0.1,
                                                     control.vb=list(enable = FALSE)),
                                   safe = TRUE,
                                   verbose = TRUE,
@@ -237,6 +239,6 @@ Maps$Fraxinus_excelsior$Maps
 Maps$Ulmus_glabra$Maps
 Maps$Arnica_montana$Maps
 
-saveRDS(Maps, 'Maps.rds')
+#saveRDS(Maps, 'Maps.rds')
 
 ```
