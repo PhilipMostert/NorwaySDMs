@@ -47,7 +47,7 @@ sdmWorkflow <- function(Workflow = NULL,
   saveObjects <- Workflow$.__enclos_env__$private$Save
   Quiet <- Workflow$.__enclos_env__$private$Quiet
 
-  if (is.null(Workflow$.__enclos_env__$private$Mesh)) stop('An inla.mesh object is required before any analysis is completed. Please add using the `.$addMesh` function.')
+  if (is.null(Workflow$.__enclos_env__$private$Mesh)) stop('An fm_mesh_2d object is required before any analysis is completed. Please add using the `.$addMesh` function.')
   if (is.null(Workflow$.__enclos_env__$private$Output)) stop('A model output needs to be specified before any analysis is completed. Please add using the `.$workflowOutput` function.')
 
   Oputs <- Workflow$.__enclos_env__$private$Output
@@ -361,9 +361,9 @@ else {
       if (is.null(predictionData)) {
 
         .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'Spatial')
-        predictionData <- inlabru::fm_pixels(mesh = .__mesh.__,
-                                       mask = .__mask.__,
-                                       dims = predictionDim)
+        predictionData <- fmesher::fm_pixels(mesh = .__mesh.__,
+                                             mask = .__mask.__,
+                                             dims = predictionDim)
 
       }
 
@@ -406,7 +406,7 @@ else {
       if (is.null(predictionData)) {
 
         .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'Spatial')
-        predictionData <- inlabru::fm_pixels(mesh = .__mesh.__,
+        predictionData <- fmesher::fm_pixels(mesh = .__mesh.__,
                                              mask = .__mask.__,
                                              dims = predictionDim)
 
@@ -554,7 +554,7 @@ else {
       if (is.null(predictionData)) {
 
         .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'sf')
-        predictionData <- inlabru::fm_pixels(mesh = .__mesh.__,
+        predictionData <- fmesher::fm_pixels(mesh = .__mesh.__,
                                              mask = .__mask.__,
                                              dims = predictionDim)
       }
@@ -601,7 +601,7 @@ else {
         if (is.null(predictionData)) {
 
           .__mask.__ <- as(Workflow$.__enclos_env__$private$Area, 'Spatial')
-          predictionData <- inlabru::fm_pixels(mesh = .__mesh.__,
+          predictionData <- fmesher::fm_pixels(mesh = .__mesh.__,
                                                mask = .__mask.__,
                                                dims = predictionDim)
 
