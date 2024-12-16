@@ -104,6 +104,9 @@ sdmWorkflow <- function(Workflow = NULL,
                 int.args = ipointsOptions)
   st_geometry(IPS) <- 'geometry'
 
+  IPS <- IPS[sapply(st_intersects(IPS,  Workflow$.__enclos_env__$private$Area), function(z) if (length(z)==0) FALSE else TRUE),]
+
+
   if (!Workflow$.__enclos_env__$private$richnessEstimate) {
 
   for (species in unique(c(names(Workflow$.__enclos_env__$private$dataGBIF),
