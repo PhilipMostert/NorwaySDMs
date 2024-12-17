@@ -162,7 +162,7 @@ workflow$plot(Mesh = TRUE)
 
 Furthermore we also used *penalizing complexity* (PC) priors in our model, which are designed to control the spatial range and standard deviation in the GRF's Matérn covariance function in order to reduce over-fitting in the model [@simpson2017penalising].
 
-```{r Priors, eval = FALSE}
+```{r Priors}
 
 workflow$specifySpatial(prior.range = c(100, 0.1),
                         prior.sigma = c(1, 0.1),
@@ -172,7 +172,7 @@ workflow$specifySpatial(prior.range = c(100, 0.1),
 
 We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 5).
 
-```{r Fixed priors, eval = FALSE}
+```{r Fixed priors}
 
 workflow$specifyPriors(effectNames = 'Intercept',
                        Mean = 0, Precision = 5)
