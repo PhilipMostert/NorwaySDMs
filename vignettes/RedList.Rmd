@@ -13,7 +13,7 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
+  comment = "#>", 
   eval = FALSE,
   fig.width=8, 
   fig.height=5,
@@ -34,9 +34,8 @@ library(INLA)
 
 *intSDM* has two main functions: `startWorkflow()` and `sdmWorkflow()`. The first of which is designed to setup and specify all the individual components of the workflow using different slot functions. The functions related to this object include:
 
-<<<<<<< HEAD
 | Function name | Function use |
-|------------------|------------------------------------------------------|
+|-------------------|-----------------------------------------------------|
 | `.$plot()` | Plot data and other objects required for the model. |
 | `.$addStructured()` | Add data not available on GBIF. |
 | `.$addMesh()` | Create an *inla.mesh* object. |
@@ -49,23 +48,6 @@ library(INLA)
 | `.$biasFields()` | Specify an additional spatial effect for a dataset. |
 | `.$workflowOutput()` | Specify the output of the workflow. |
 | `.$obtainMeta()` | Obtain metadata for the occurrence records. |
-=======
-| Function name         | Function use                                                                                               |
-|-----------------------|------------------------------------------------------------------------------------------------------------|
-| `.$plot()`            | Plot data and other objects required for the model.                                                        |
-| `.$addStructured()`   | Add data not available on GBIF.                                                                            |
-| `.$addMesh()`         | Create an *fm_mesh_2d* object.                                                                              |
-| `.$addGBIF()`         | Add data from GBIF.                                                                                        |
-| `.$addArea()`         | Specify sampling domain.                                                                                   |
-| `.$addCovariates()`   | Add spatial covariates.                                                                                    |
-| `.$crossValidation()` | Specify the cross-validation method.                                                                       |
-| `.$modelOptions()`    | Add *R-INLA [@martins2013bayesian], inlabru [@bachl2019inlabru]* and *PointedSDMs* [@PointedSDMs] options. |
-| `.$specifySpatial()`  | Add penalizing complexity priors to the spatial effects.                                                   |
-| `.$biasFields()`      | Specify an additional spatial effect for a dataset.                                                        |
-| `.$workflowOutput()`  | Specify the output of the workflow.                                                                        |
-| `.$obtainMeta()`      | Obtain metadata for the occurrence records.                                                                |
-
-`sdmWorkflow()` implements the workflow based on the objects added in `startWorkflow()`. The output of this function is a list of objects specified in `.$workflowOutput()`.
 
 ## Workflow setup
 
@@ -111,7 +93,7 @@ Species' occurrence data is certainly the most important component of a SDM, and
 
 The former of which uses the *rgbif* package to download data directly from GBIF. For this function, we need to specify the name of the dataset (*datasetName*) and the type of the dataset (*datasetType*) -- which can be one of *PO, PA* or *Counts*. The *...* argument is used to specify any addiditional arguments for `rgbif::occ_data()` [@chamberlain2022rgbif] (in this case, *limit* and *datasetKey*). If *`datasetType = 'PA'`*, absences may be generated using *`generateAbsences = TRUE`*. This will treat the obtained data as a checklist survey data: combining all the sampling locations for the species in the dataset, and creating absences when a given species did not occur in a given region.
 
-For this example we consider three sources of data. The *Vascular Plant Field Notes* is a collection of observations provided by the *Norwegian University of Science and Technolog*y's (NTNU) [@NTNU] University Museum and the *University of Oslo* (UiO) [@UiO], containing records of standardized cross-lists of most vascular plants found in Norway. We treat these two datasets as detection/non-detection data, generating absences in sampling locations where the species does not occur.
+For this example we consider three sources of data. The *Vascular Plant Field Notes* is a collection of observations provided by the *Norwegian University of Science and Technology*'s (NTNU) [@NTNU] University Museum and the *University of Oslo* (UiO) [@UiO], containing records of standardized cross-lists of most vascular plants found in Norway. We treat these two datasets as detection/non-detection data, generating absences in sampling locations where the species does not occur.
 
 The other source of data considered comes from the Norwegian Species Observation service (published by *Artsdatabanken*) [@Ardatasbanken]. This data is a collection of citizen science records -- and as a result we treat it as presence-only data.
 
@@ -145,7 +127,7 @@ workflow$plot(Species = TRUE)
 
 Covariate data may be added to the model using `.$addCovariates()`. Layers from *WorldClim [@fick2017worldclim]* may be accessed using the *worldClim argument*. This in turn uses the *geodata [@geodata]* R package to obtain *spatRaster* objects of the covariates cropped around the study domain. Other covariate layers may be added using the *Object* argument.
 
-```{r addCovariates, eval = FALSE}
+```{r addCovariates}
 
 workflow$addCovariates(worldClim = 'tavg', res = 2.5, Function = scale)
 workflow$plot(Covariates = TRUE)
@@ -169,7 +151,7 @@ One of the objects required for our model is an *fm_mesh_2d* object, which we wi
 ```{r INLA}
 
 workflow$addMesh(cutoff = 20 * 0.25,
-                 max.edge = c(60, 180)*0.5, #0.25
+                 max.edge = c(60, 180)*0.25,
                  offset= c(30, 200))
 
 workflow$plot(Mesh = TRUE)
@@ -180,7 +162,7 @@ workflow$plot(Mesh = TRUE)
 
 Furthermore we also used *penalizing complexity* (PC) priors in our model, which are designed to control the spatial range and standard deviation in the GRF's Matérn covariance function in order to reduce over-fitting in the model [@simpson2017penalising].
 
-```{r Priors}
+```{r Priors, eval = FALSE}
 
 workflow$specifySpatial(prior.range = c(100, 0.1),
                         prior.sigma = c(1, 0.1),
@@ -190,7 +172,7 @@ workflow$specifySpatial(prior.range = c(100, 0.1),
 
 We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 5).
 
-```{r Fixed priors}
+```{r Fixed priors, eval = FALSE}
 
 workflow$specifyPriors(effectNames = 'Intercept',
                        Mean = 0, Precision = 5)
@@ -218,7 +200,6 @@ We specify the model output using the function `.$workflowOutput`. In this workf
 
 ```{r options}
 
-#workflow$crossValidation(Method = 'Loo')
 workflow$workflowOutput(c('Maps', 'Model', 'Bias'))
 
 ```
@@ -229,15 +210,12 @@ The workflow is then implemented using the `sdmWorkflow()` function. We also spe
 
 Due to the lengthy time it requires to produce this map, inference is not made in this vignette. However the script is available below for the user to run the model themselves.
 
-```{r Maps}
+```{r Maps, eval = FALSE}
 
 Maps <- sdmWorkflow(workflow,inlaOptions = list(num.threads = 1,
                                                 control.inla=list(int.strategy = 'ccd',
                                                     strategy = 'gaussian',
-                                                    #tolerance = 5e-10,
-                                                    #h = 5e-8,
                                                     cmin = 0,
-                                                    #diagonal = 0.1,
                                                     control.vb=list(enable = FALSE)),
                                   safe = TRUE,
                                   verbose = TRUE,
