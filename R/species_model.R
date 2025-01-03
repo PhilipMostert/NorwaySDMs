@@ -832,11 +832,11 @@ addGBIF = function(Species = 'All', datasetName = NULL,
       for (cov in names(Object)) {
 
       #Check this for all classes
-      maskedDF <- terra::crop(terra::mask(Object[cov][[1]], private$Area), private$Area)
+      maskedDF <- terra::mask(terra::crop(Object[cov][[1]], private$Area), private$Area)
 
       if (all(is.na(terra::values(maskedDF)))) stop('The covariate provided and the area specified do not match.')
 
-      private$Covariates[[cov]] <- Object[cov]
+      private$Covariates[[cov]] <- maskedDF[cov]#Object[cov]
 
 }
       #else get name of object and then save it
