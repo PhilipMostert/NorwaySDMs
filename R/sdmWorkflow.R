@@ -95,7 +95,17 @@ sdmWorkflow <- function(Workflow = NULL,
   .__responseCounts.__ <- Workflow$.__enclos_env__$private$responseCounts
   .__trialsName.__ <- Workflow$.__enclos_env__$private$trialsName
 
-  if (length(Workflow$.__enclos_env__$private$Covariates) > 0) spatCovs <- terra::rast(Workflow$.__enclos_env__$private$Covariates)
+  if (length(Workflow$.__enclos_env__$private$Covariates) > 0) {
+
+    covRes <- sapply(workflow$.__enclos_env__$private$Covariates, function(x) res(x)[1])
+    if (length(unique(covRes)) > 1) {
+
+      lowRes <- names(which.max(covRes))
+      spatCovs <- terra::rast(lapply(Workflow$.__enclos_env__$private$Covariates, FUN = function(x) resample(x, Workflow$.__enclos_env__$private$Covariates[[lowRes]])))
+
+    } else spatCovs <- terra::rast(Workflow$.__enclos_env__$private$Covariates)
+
+  }
   else spatCovs <- NULL
 
   spatCovs <- do.call(c, unlist(list(spatCovs, Workflow$.__enclos_env__$private$biasCovariates), recursive = FALSE))
