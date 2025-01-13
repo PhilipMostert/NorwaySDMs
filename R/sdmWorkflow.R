@@ -97,7 +97,7 @@ sdmWorkflow <- function(Workflow = NULL,
 
   if (length(Workflow$.__enclos_env__$private$Covariates) > 0) {
 
-    covRes <- sapply(workflow$.__enclos_env__$private$Covariates, function(x) res(x)[1])
+    covRes <- sapply(Workflow$.__enclos_env__$private$Covariates, function(x) res(x)[1])
     if (length(unique(covRes)) > 1) {
 
       lowRes <- names(which.max(covRes))
