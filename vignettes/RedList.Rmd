@@ -1,6 +1,6 @@
 ---
 title: "intSDM: R package to produce species distribution models in a reproducible framework"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 date: "`r Sys.Date()`"
 bibliography: '`r system.file("References.bib", package="intSDM")`'
 biblio-style: authoryear
@@ -35,7 +35,7 @@ library(INLA)
 *intSDM* has two main functions: `startWorkflow()` and `sdmWorkflow()`. The first of which is designed to setup and specify all the individual components of the workflow using different slot functions. The functions related to this object include:
 
 | Function name | Function use |
-|-------------------|-----------------------------------------------------|
+|--------------------|----------------------------------------------------|
 | `.$plot()` | Plot data and other objects required for the model. |
 | `.$addStructured()` | Add data not available on GBIF. |
 | `.$addMesh()` | Create an *inla.mesh* object. |
@@ -58,6 +58,7 @@ The other arguments (*saveOptions* and *Save)* should be used if the user wants 
 ```{r initialize workflow}
 
 proj <- '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.9996 +datum=WGS84 +units=km +x_0=500 +y_0=0 +no_defs'
+#proj <- '+proj=utm +zone=32 +datum=WGS84 +units=km +no_defs +type=crs'
 
 workflow <- startWorkflow(
         Projection = proj,
@@ -99,25 +100,25 @@ The other source of data considered comes from the Norwegian Species Observation
 
 ```{r addGBIF}
 
-workflow$addGBIF(datasetName = 'NTNU', 
-                 datasetType = 'PA',
-                 limit = 10000,
-                 coordinateUncertaintyInMeters = '0,50',
-                 generateAbsences = TRUE, 
-                 datasetKey = 'd29d79fd-2dc4-4ef5-89b8-cdf66994de0d')
+workflow$addGBIF(datasetName = 'CZ', 
+                 datasetType = 'PO',
+                 coordinateUncertaintyInMeters = '0,100',
+                 limit = 10000, 
+                 datasetKey = 'b124e1e0-4755-430f-9eab-894f25a9b59c')
 
 workflow$addGBIF(datasetName = 'UiO',
                  datasetType = 'PA',
-                 limit = 10000,
-                 coordinateUncertaintyInMeters = '0,50',
+                 limit = 10000, 
+                 coordinateUncertaintyInMeters = '0,100', 
                  generateAbsences = TRUE,
                  datasetKey = 'e45c7d91-81c6-4455-86e3-2965a5739b1f')
 
-workflow$addGBIF(datasetName = 'CZ', 
-                 datasetType = 'PO',
-                 coordinateUncertaintyInMeters = '0,50',
-                 limit = 10000,
-                 datasetKey = 'b124e1e0-4755-430f-9eab-894f25a9b59c')
+workflow$addGBIF(datasetName = 'NTNU', 
+                 datasetType = 'PA',
+                 limit = 10000, 
+                 coordinateUncertaintyInMeters = '0,100', 
+                 generateAbsences = TRUE, 
+                 datasetKey = 'd29d79fd-2dc4-4ef5-89b8-cdf66994de0d')
 
 workflow$plot(Species = TRUE)
 
@@ -125,11 +126,26 @@ workflow$plot(Species = TRUE)
 
 ### Adding covariate data
 
-Covariate data may be added to the model using `.$addCovariates()`. Layers from *WorldClim [@fick2017worldclim]* may be accessed using the *worldClim argument*. This in turn uses the *geodata [@geodata]* R package to obtain *spatRaster* objects of the covariates cropped around the study domain. Other covariate layers may be added using the *Object* argument.
+Covariate data may be added to the model using `.$addCovariates()`. Layers from *WorldClim [@fick2017worldclim]* may be accessed using the *worldClim argument*, and land cover covariates may be obtained using the *landCover* argument.. This in turn uses the *geodata [@geodata]* R package to obtain *spatRaster* objects of the covariates cropped around the study domain. Other covariate layers may be added using the *Object* argument.
 
-```{r addCovariates}
+```{r addCovariates, eval = FALSE}
 
 workflow$addCovariates(worldClim = 'tavg', res = 2.5, Function = scale)
+
+workflow$addCovariates(landCover = 'grassland', Function = scale)
+
+workflow$plot(Covariates = TRUE)
+
+```
+
+```{r covs, echo = FALSE, eval = TRUE}
+
+#workflow$addCovariates(worldClim = 'tavg', res = 2.5, Function = scale)
+tavg <- terra::rast('~/desktop/tavg.tiff')
+workflow$addCovariates(tavg)
+grassland <- terra::rast('~/Desktop/grassland.tiff')
+workflow$addCovariates(Object = grassland)
+
 workflow$plot(Covariates = TRUE)
 
 ```
@@ -150,9 +166,9 @@ One of the objects required for our model is an *fm_mesh_2d* object, which we wi
 
 ```{r INLA}
 
-workflow$addMesh(cutoff = 20 * 0.25,
-                 max.edge = c(60, 180)*0.25,
-                 offset= c(30, 200))
+workflow$addMesh(cutoff = 20 * 0.5,
+                 max.edge = c(60, 180) * 0.5,
+                 offset= c(30, 250))
 
 workflow$plot(Mesh = TRUE)
 
@@ -160,43 +176,51 @@ workflow$plot(Mesh = TRUE)
 
 ### Specify priors
 
-Furthermore we also used *penalizing complexity* (PC) priors in our model, which are designed to control the spatial range and standard deviation in the GRF's Matérn covariance function in order to reduce over-fitting in the model [@simpson2017penalising].
+Furthermore we also used *penalizing complexity* (PC) priors in our model, which are designed to control the spatial range and standard deviation in the GRF's Matérn covariance function in order to reduce over-fitting in the model [@simpson2017penalising]. An integrate-to-zero constraint is set to stabilize the model, using `constr = TRUE`.
 
 ```{r Priors}
 
-workflow$specifySpatial(prior.range = c(100, 0.1),
-                        prior.sigma = c(1, 0.1),
-                        constr = TRUE)
+workflow$specifySpatial(prior.range = c(200, 0.2),
+                        prior.sigma = c(1, 0.01), constr = TRUE)
 
 ```
 
-We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 5).
+We also specify priors for the intercept terms and the fixed effects of the models. In this vignette we choose tight priors (mean = 0; precision = 1).
 
 ```{r Fixed priors}
 
 workflow$specifyPriors(effectNames = 'Intercept',
-                       Mean = 0, Precision = 5)
+                       Mean = 0, Precision = 1)
 
-workflow$specifyPriors('tavg', Mean = 0, Precision = 5)
+workflow$specifyPriors('tavg', Mean = 0, Precision = 1)
+
+workflow$specifyPriors('grassland', Mean = 0, Precision = 1)
 
 ```
 
 ### Bias field
 
-We specify an additional spatial effect for the citizen science data using `.$biasFields()` to account biases in the collection process [@simmonds2020more].
+We specify an additional spatial effect for the citizen science data using `.$biasFields()` to account biases in the collection process [@simmonds2020more]. The same
 
 ```{r Bias}
 
 workflow$biasFields('CZ', 
-                    prior.range = c(1, 0.1), #1 #0.1
-                    prior.sigma = c(0.1, 0.1), #1 #0.1
-                    constr = FALSE)
+                    prior.range = c(200, 0.2),
+                    prior.sigma = c(1, 0.01)) 
 
 ```
 
 ### Model options
 
-We specify the model output using the function `.$workflowOutput`. In this workflow, we want to return the *R-INLA* model objects and the maps of the predicted intensity.
+To simplify the model, we set the parameter used to connect the shared spatial effect between the likelioods to a fixed value of 1.
+
+```{r specPrior}
+
+workflow$specifyPriors(copyModel = list(beta = list(fixed = TRUE)))
+
+```
+
+We them specify the model output using the function `.$workflowOutput`. In this workflow, we want to return the *R-INLA* model objects and the maps of the predicted intensity.
 
 ```{r options}
 
@@ -210,17 +234,18 @@ The workflow is then implemented using the `sdmWorkflow()` function. We also spe
 
 Due to the lengthy time it requires to produce this map, inference is not made in this vignette. However the script is available below for the user to run the model themselves.
 
-```{r Maps, eval = FALSE}
+```{r Maps, eval = TRUE}
 
 Maps <- sdmWorkflow(workflow,inlaOptions = list(num.threads = 1,
                                                 control.inla=list(int.strategy = 'ccd',
-                                                    strategy = 'gaussian',
+                                                    h = 1e-4,
                                                     cmin = 0,
                                                     control.vb=list(enable = FALSE)),
                                   safe = TRUE,
                                   verbose = TRUE,
                                   inla.mode = 'experimental'),
-              predictionDim = c(400, 400))
+              predictionDim = c(400, 400),
+              ipointsOptions = list(method = 'direct'))
 ```
 
 ## Maps
@@ -233,6 +258,12 @@ Maps$Fraxinus_excelsior$Maps
 Maps$Ulmus_glabra$Maps
 Maps$Arnica_montana$Maps
 
-#saveRDS(Maps, 'Maps.rds')
+```
+
+And model summaries as:
+
+```{r model Summaries}
+
+lapply(Maps, function(x) x$Model)
 
 ```
