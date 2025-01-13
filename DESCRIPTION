@@ -42,7 +42,8 @@ Imports:
     giscoR,
     blockCV,
     rgbif,
-    tidyterra
+    tidyterra,
+    units
 Suggests:
     viridis,
     INLA (>= 21.08.31),
