@@ -4,7 +4,7 @@
 \alias{obtainGBIF}
 \title{obtainGBIF: Function to obtain occurrence data from GBIF.}
 \usage{
-obtainGBIF(query, geometry, projection, datasettype, ...)
+obtainGBIF(query, geometry, projection, datasettype, filterDistance, ...)
 }
 \arguments{
 \item{query}{The scientific name of the species for which observations need to be obtained.}
@@ -14,6 +14,8 @@ obtainGBIF(query, geometry, projection, datasettype, ...)
 \item{projection}{The coordinate reference system used for the observations and geometry.}
 
 \item{datasettype}{The type of dataset that is obtained from \emph{GBIF}. Can be one of: \code{PO}, \code{PA}, \code{Counts}.}
+
+\item{filterDistance}{Remove all points x km away from the boundary polygon.}
 
 \item{...}{Additional arguments to pass to \link[rgbif]{occ_download}.}
 }
