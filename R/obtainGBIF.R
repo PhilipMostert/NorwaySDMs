@@ -6,11 +6,12 @@
 #' @param geometry An \code{sf} object surrounding the study area where observations need to be obtained.
 #' @param projection The coordinate reference system used for the observations and geometry.
 #' @param datasettype The type of dataset that is obtained from _GBIF_. Can be one of: \code{PO}, \code{PA}, \code{Counts}.
-#' @param filterDistance. Remove all points x km away from the boundary polygon.
+#' @param filterDistance Remove all points x km away from the boundary polygon.
 #' @param ... Additional arguments to pass to \link[rgbif]{occ_download}.
 #'
 #' @import rgbif
 #' @import sf
+#' @import units
 #'
 #' @return An \code{sf} object containing the locations and other relevant information of the species obtained from _GBIF_.
 
@@ -172,8 +173,8 @@ obtainGBIF <- function(query,
 
   if (filterDistance > 0) {
 
-    distMatrix <- units::set_units(st_distance(speciesIn, st_cast(geometry,"MULTILINESTRING")))
-    speciesIn <- speciesIn[distMatrix[,1]> units::set_units(filterDistance, km),]
+    distMatrix <- units::set_units(st_distance(speciesIn, st_cast(geometry,"MULTILINESTRING")), 'km')
+    speciesIn <- speciesIn[distMatrix[,1]> units::set_units(filterDistance, 'km'),]
 
   }
 
