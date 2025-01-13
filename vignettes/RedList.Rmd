@@ -1,6 +1,6 @@
 ---
 title: "intSDM: R package to produce species distribution models in a reproducible framework"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 date: "`r Sys.Date()`"
 bibliography: '`r system.file("References.bib", package="intSDM")`'
 biblio-style: authoryear
