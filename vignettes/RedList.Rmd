@@ -138,18 +138,6 @@ workflow$plot(Covariates = TRUE)
 
 ```
 
-```{r covs, echo = FALSE, eval = TRUE}
-
-#workflow$addCovariates(worldClim = 'tavg', res = 2.5, Function = scale)
-tavg <- terra::rast('~/desktop/tavg.tiff')
-workflow$addCovariates(tavg)
-grassland <- terra::rast('~/Desktop/grassland.tiff')
-workflow$addCovariates(Object = grassland)
-
-workflow$plot(Covariates = TRUE)
-
-```
-
 ### Metadata
 
 We can then view the metadata for the obtained occurrence records using the `.$obtainMeta()` function, which will give us the citation for the datasets used in this workflow.
@@ -234,7 +222,7 @@ The workflow is then implemented using the `sdmWorkflow()` function. We also spe
 
 Due to the lengthy time it requires to produce this map, inference is not made in this vignette. However the script is available below for the user to run the model themselves.
 
-```{r Maps, eval = TRUE}
+```{r Maps}
 
 Maps <- sdmWorkflow(workflow,inlaOptions = list(num.threads = 1,
                                                 control.inla=list(int.strategy = 'ccd',
