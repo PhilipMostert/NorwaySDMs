@@ -1,5 +1,8 @@
 testthat::test_that('obtainRichness can produce an sf object of species richness', {
 
+  skip_on_cran()
+  library(R.utils)
+
   proj <- '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
   countries <- st_as_sf(geodata::world(path = tempdir()))
   countries <- countries[countries$NAME_0 %in% c('Norway'),]
@@ -25,7 +28,7 @@ testthat::test_that('obtainRichness can produce an sf object of species richness
   workflow$addGBIF(datasetName = 'GBIF_data', limit = 50) #Get less species
   workflow$addGBIF(datasetName = 'GBIF_data2', limit = 50, datasetType = 'PA')
   workflow$workflowOutput(c('Model'))
-  workflow$addCovariates(worldClim = 'tmax', res = 10)
+  try(withTimeout(workflow$addCovariates(worldClim = 'tmax', res = 10), timeout = 60, onTimeout = 'silent'))
   workflow$addMesh(max.edge = 500000) #200000
   workflow$modelOptions(Richness = list(predictionIntercept = 'GBIF_data'))
   model <- sdmWorkflow(Workflow = workflow)

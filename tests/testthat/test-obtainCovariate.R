@@ -15,7 +15,7 @@ testthat::test_that('obtainCovariate can correctly obtain the covariate layer, a
     ##If taking too long//servers down
 
   try(cov <- withTimeout(
-    obtainCovariate(covname, res = '10',
+    obtainCovariate(covname, res = '10', type = 'worldclim',
                     projection, path), timeout = 60, onTimeout = 'silent'))
 
   if ('cov' %in% ls()) {
@@ -28,15 +28,29 @@ testthat::test_that('obtainCovariate can correctly obtain the covariate layer, a
   #Change CRS
   projection2 <- 'EPSG:4326'
 
-  try(cov2 <-  withTimeout(obtainCovariate(covname, res = '10',
+  try(cov2 <-  withTimeout(obtainCovariate(covname, res = '10', type = 'worldclim',
                          projection2, path), timeout = 60, onTimeout = 'silent'))
 
   if ('cov2' %in% ls()) {
 
   expect_equal(class(cov2)[1], 'SpatRaster')
   expect_identical(st_crs(cov2)[2], st_crs(projection2)[2])
-}
+  }
+
+  ##Try landcover
+
+  try(cov3 <-  withTimeout(obtainCovariate('grassland', res = '10', type = 'landcover',
+                                           projection2, path), timeout = 60, onTimeout = 'silent'))
+
+  if ('cov3' %in% ls()) {
+
+  expect_equal(class(cov3)[1], 'SpatRaster')
+  expect_equal(names(cov3)[1], 'grassland')
+
+  }
+
   unlink(path, recursive = TRUE)
+
 
 
   }
