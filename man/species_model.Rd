@@ -596,6 +596,7 @@ Function to add species occurrence records from GBIF (using the \code{rgbif} pac
   removeDuplicates = FALSE,
   generateAbsences = FALSE,
   filterDistance = 0,
+  findDatasets = FALSE,
   ...
 )}\if{html}{\out{</div>}}
 }
@@ -614,6 +615,8 @@ Function to add species occurrence records from GBIF (using the \code{rgbif} pac
 \item{\code{generateAbsences}}{Generates absences for \code{'PA'} data. This is done by combining all the sampling locations for all the species, and creating an absence where a given species does not occur.}
 
 \item{\code{filterDistance}}{Remove all points that are x kilometers away from the boundary polygon. Value must be provided in kilometers. Defaults to 0 km which removes no points.}
+
+\item{\code{findDatasets}}{Find a list of dataset keys for the species included in the model.}
 
 \item{\code{...}}{Additional arguments to specify the \link[rgbif]{occ_data} function from \code{rgbif}. See \code{?occ_data} for more details.}
 }
