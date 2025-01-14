@@ -1271,6 +1271,16 @@ obtainMeta = function(Number = TRUE,
 
   }
 
+  if (any(names(private$Covariates)) %in% c("trees", "grassland", "shrubs",
+                                            "cropland", "built", "bare",
+                                            "snow", "water", "wetland", "mangroves",
+                                            'moss')) {
+
+    cat('Citation for ESA landcover data:\n')
+    cat('Zanaga, D., Van De Kerchove, R., De Keersmaecker, W., Souverijns, N., Brockmann, C., Quast, R., Wevers, J., Grosu, A., Paccini, A., Vergnaud, S., Cartus, O., Santoro, M., Fritz, S., Georgieva, I., Lesiv, M., Carter, S., Herold, M., Li, Linlin, Tsendbazar, N.E., Ramoino, F., Arino, O., 2021. ESA WorldCover 10 m 2020 v100.\n\n')
+
+  }
+
   if (length(private$dataGBIF) == 0) stop('Please call .$addGBIF() to obtain data from GBIF.')
 
   cat('Citations for GBIF data:\n')
